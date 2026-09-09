@@ -276,6 +276,8 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 
 <div class="adjust-panel" id="adjPanel">
 <label>🔍 ズーム</label>
+<button class="btn" onclick="zoomStep(-1)">🔍−</button>
+<button class="btn" onclick="zoomStep(1)">🔍＋</button>
 <input type="range" id="adjZoom" min="100" max="300" value="100">
 <button class="btn" onclick="nudge(0,-1)">⬆️</button>
 <button class="btn" onclick="nudge(0,1)">⬇️</button>
@@ -378,6 +380,26 @@ function nudge(dx,dy){
   setT(adjImg,t);
 }
 function replacePhoto(){ if(adjImg){ targetImg=adjImg; pick.value=''; pick.click(); } }
+/* ＋／−ボタンで拡大縮小（iPadでスライダーやピンチが効かない時の確実な手段） */
+function zoomStep(dir){
+  if(!adjImg) return;
+  const t=getT(adjImg);
+  t.s=Math.max(1,Math.min(3,Math.round((t.s+dir*0.2)*10)/10));
+  setT(adjImg,t); adjZoom.value=t.s*100;
+}
+/* iPad Safari のピンチ（gestureイベント）でも拡大縮小できるようにする */
+let gestureBaseS=null;
+document.addEventListener('gesturestart',e=>{
+  if(!adjImg) return;
+  gestureBaseS=getT(adjImg).s; e.preventDefault();
+},{passive:false});
+document.addEventListener('gesturechange',e=>{
+  if(!adjImg||gestureBaseS===null) return;
+  const t=getT(adjImg);
+  t.s=Math.max(1,Math.min(3,gestureBaseS*e.scale));
+  setT(adjImg,t); adjZoom.value=t.s*100; e.preventDefault();
+},{passive:false});
+document.addEventListener('gestureend',e=>{ gestureBaseS=null; if(adjImg) e.preventDefault(); },{passive:false});
 adjZoom.addEventListener('input',()=>{
   if(!adjImg) return;
   const t=getT(adjImg); t.s=adjZoom.value/100; setT(adjImg,t);
