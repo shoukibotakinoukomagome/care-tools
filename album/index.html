@@ -28,6 +28,10 @@ main{max-width:820px;margin:0 auto;padding:8px}
 .sec{position:relative;background:#fff;box-shadow:0 2px 12px rgba(74,63,56,.15);
   aspect-ratio:200/287;padding:2mm;margin:0 auto 14px;
   display:flex;flex-direction:column}
+.sec-del{display:none;position:absolute;top:-16px;right:6px;z-index:20;
+  border:1px solid #c96f6f;background:#fff;color:#c96f6f;border-radius:18px;
+  padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer}
+body.editing .sec-del{display:block}
 .secfoot{flex:0 0 auto;text-align:center;font-size:10px;color:#a3958a;letter-spacing:.08em;padding-top:3px;outline:none}
 body.editing .secfoot{outline:1px dashed var(--accent)}
 .grid{flex:1;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px;min-height:0;width:100%}
@@ -47,6 +51,10 @@ body.editing .frame.empty::after{content:'＋ 写真';font-size:16px;color:#b8a8
 .label .label-text{outline:none}
 .label .label-grip{display:none;cursor:move;color:#8a9a7b;user-select:none}
 body.editing .label .label-grip{display:inline}
+/* タイトルの文字サイズ（編集中だけ A−／A＋ を出す） */
+.label .label-sz{display:none;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:4px;
+  font-size:11px;line-height:1;padding:3px 5px;margin-right:4px;cursor:pointer;font-family:inherit;vertical-align:middle}
+body.editing .label .label-sz{display:inline-block}
 body.editing .frame{outline:2px dashed var(--accent);outline-offset:-2px;cursor:pointer}
 .editing .frame img{touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .cell.adjusting img{touch-action:none}
@@ -66,7 +74,7 @@ body.placing main{cursor:crosshair}
 footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;color:#a3958a}
 @media (max-width:640px){ main{padding:4px} .grid{gap:4px} }
 @media print{
-  .toolbar,footer,.hint,.cell-del,.label-del{display:none!important}
+  .toolbar,footer,.hint,.cell-del,.label-del,.sec-del,#addPageBtn{display:none!important}
   main{max-width:none;padding:0}
   .sec{box-shadow:none;aspect-ratio:auto;width:210mm;height:297mm;margin:0;
     padding:9mm;page-break-after:always;break-inside:avoid}
@@ -84,6 +92,7 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 <strong>日常の様子アルバム（25枚版）</strong>
 <button class="btn" id="editBtn" onclick="toggleEdit()">✏️ 編集モード</button>
 <button class="btn" id="labelBtn" onclick="startLabel()" style="display: none;">🏷 タイトル追加</button>
+<button class="btn" id="addPageBtn" onclick="addPage()" style="display: none;">📄 ページ追加</button>
 <button class="btn" onclick="window.print()">🖨 印刷</button>
 <button class="btn primary" onclick="exportHtml()">💾 保存</button>
 <div class="hint" id="hint" style="display: none;">タイトル＝ドラッグで好きな場所へ・タップで書き換え・✕で削除。「🏷タイトル追加」→置きたい場所をタップ。写真＝タップで差し替え・✕で削除。</div>
@@ -91,156 +100,7 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 
 <main>
 <section class="sec">
-<div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-</div>
-<div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
-</section>
-<section class="sec">
-<div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-</div>
-<div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
-</section>
-<section class="sec">
-<div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-</div>
-<div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
-</section>
-<section class="sec">
-<div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-</div>
-<div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
-</section>
-<section class="sec">
-<div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-</div>
-<div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
-</section>
-<section class="sec">
+<button class="sec-del noprint">このページを削除</button>
 <div class="grid">
 <figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
 <figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
@@ -302,10 +162,19 @@ function toggleEdit(){
   b.textContent=editing?'✅ 編集おわり':'✏️ 編集モード';
   document.getElementById('hint').style.display=editing?'block':'none';
   document.getElementById('labelBtn').style.display=editing?'':'none';
+  document.getElementById('addPageBtn').style.display=editing?'':'none';
+  if(editing) ensureLabelTools();
   document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false'));
   if(!editing) closeAdjust();
 }
 document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable','false'));
+
+function addPage(){
+  const sec=document.getElementById('secTpl').content.firstElementChild.cloneNode(true);
+  document.querySelector('main .sec:last-of-type').after(sec);
+  if(editing) sec.querySelector('.secfoot').setAttribute('contenteditable','true');
+  sec.scrollIntoView({behavior:'smooth'});
+}
 
 function startLabel(){ placing=!placing; document.body.classList.toggle('placing',placing);
   document.getElementById('labelBtn').classList.toggle('active',placing); }
@@ -315,12 +184,37 @@ function stopLabel(){ placing=false; document.body.classList.remove('placing');
 function makeLabel(sec,xPct,yPct,text){
   const n=document.createElement('span');
   n.className='label'; n.style.left=xPct+'%'; n.style.top=yPct+'%';
-  n.innerHTML='<button class="label-del">✕</button><span class="label-grip">⠿ </span><span class="label-text" contenteditable="true"></span>';
+  n.innerHTML='<button class="label-del">✕</button><span class="label-grip">⠿ </span><button class="label-sz" data-d="-1">A−</button><button class="label-sz" data-d="1">A＋</button><span class="label-text" contenteditable="true"></span>';
   n.querySelector('.label-text').textContent=text||'タイトル';
   sec.appendChild(n); return n;
 }
+/* 保存済みファイルの古いタイトルにも A−／A＋ を付ける（編集モードに入る時） */
+function ensureLabelTools(){
+  document.querySelectorAll('.label').forEach(lb=>{
+    if(lb.querySelector('.label-sz')) return;
+    const grip=lb.querySelector('.label-grip'), txt=lb.querySelector('.label-text');
+    const html='<button class="label-sz" data-d="-1">A−</button><button class="label-sz" data-d="1">A＋</button>';
+    (grip||txt).insertAdjacentHTML(grip?'afterend':'beforebegin',html);
+  });
+}
+function labelSize(lb,dir){
+  const cur=parseFloat(lb.style.fontSize)||13;
+  lb.style.fontSize=Math.max(9,Math.min(40,cur+dir*2))+'px';
+}
 
 document.addEventListener('click',e=>{
+  const secDel=e.target.closest('.sec-del');
+  if(secDel){
+    const secs=document.querySelectorAll('.sec');
+    if(secs.length===1){ alert('最後の1ページは消せません'); return; }
+    const sec=secDel.closest('.sec');
+    if(sec.querySelector('.frame img')||sec.querySelector('.label')){
+      alert('写真かタイトルが入っているページは消せません（先に✕で空にしてください）'); return;
+    }
+    sec.remove(); return;
+  }
+  const szBtn=e.target.closest('.label-sz');
+  if(szBtn){ labelSize(szBtn.closest('.label'),+szBtn.dataset.d); e.preventDefault(); return; }
   if(e.target.closest('.label-del')){ e.target.closest('.label').remove(); return; }
   if(e.target.closest('.cell-del')){
     const fr=e.target.closest('.cell').querySelector('.frame');
@@ -457,7 +351,7 @@ let drag=null, off={x:0,y:0};
 document.addEventListener('pointerdown',e=>{
   if(!editing) return;
   const n=e.target.closest('.label');
-  if(!n||e.target.closest('.label-del')) return;
+  if(!n||e.target.closest('.label-del')||e.target.closest('.label-sz')) return;
   if(e.target.closest('.label-text')) return; // 文字タップは編集に譲る
   drag=n; const r=n.getBoundingClientRect();
   off={x:e.clientX-r.left,y:e.clientY-r.top};
@@ -528,6 +422,40 @@ async function exportHtml(){
 </script>
 
 
+
+<template id="secTpl">
+<section class="sec">
+<button class="sec-del noprint">このページを削除</button>
+<div class="grid">
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+</div>
+<div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
+</section>
+</template>
 
 <script>
 /* ---- 写真ドラッグで入れ替え（編集モード中・写真を掴んで別の枠へ） ---- */
