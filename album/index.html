@@ -89,6 +89,8 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
   .secfoot{font-size:8pt;padding-top:1mm}
   @page{size:A4 portrait;margin:0}
 }
+/* ブラウザが付けるヘッダー/フッター（URL・日時・ページ番号）を出さないため、余白ゼロを最上位でも宣言 */
+@page{size:A4 portrait;margin:0}
 </style>
 </head>
 <body class="">
@@ -207,6 +209,26 @@ function labelSize(lb,dir){
   const cur=parseFloat(lb.style.fontSize)||13;
   lb.style.fontSize=Math.max(9,Math.min(40,cur+dir*2))+'px';
 }
+/* タイトルを写真の角に吸い付ける（角から24px以内で離した時。ボタン不要） */
+function snapLabel(n){
+  const sec=n.closest('.sec'); if(!sec) return;
+  const r=sec.getBoundingClientRect(), lr=n.getBoundingClientRect();
+  let best=null, bestD=24;
+  sec.querySelectorAll('.frame').forEach(fr=>{
+    const f=fr.getBoundingClientRect();
+    [
+      {x:f.left, y:f.top,    lx:lr.left,  ly:lr.top},
+      {x:f.right,y:f.top,    lx:lr.right, ly:lr.top},
+      {x:f.left, y:f.bottom, lx:lr.left,  ly:lr.bottom},
+      {x:f.right,y:f.bottom, lx:lr.right, ly:lr.bottom}
+    ].forEach(c=>{ const d=Math.hypot(c.x-c.lx,c.y-c.ly); if(d<bestD){ bestD=d; best=c; } });
+  });
+  if(!best) return;
+  const nl=lr.left+(best.x-best.lx), nt=lr.top+(best.y-best.ly);
+  n.style.right='auto';
+  n.style.left=Math.max(0,(nl-r.left)/r.width*100)+'%';
+  n.style.top =Math.max(0,(nt-r.top)/r.height*100)+'%';
+}
 
 document.addEventListener('click',e=>{
   const secDel=e.target.closest('.sec-del');
@@ -234,6 +256,7 @@ document.addEventListener('click',e=>{
     const r=sec.getBoundingClientRect();
     const x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
     const n=makeLabel(sec,Math.min(x,72),Math.min(y,95),'');
+    snapLabel(n);
     stopLabel(); n.querySelector('.label-text').focus();
     e.preventDefault(); e.stopPropagation(); return;
   }
@@ -404,7 +427,8 @@ document.addEventListener('pointermove',e=>{
   drag.style.top =Math.max(0,Math.min((e.clientY-off.y-r.top)/r.height*100,100-hPct))+'%';
   e.preventDefault();
 });
-document.addEventListener('pointerup',()=>{drag=null});
+document.addEventListener('pointerup',()=>{ if(drag) snapLabel(drag); drag=null; });
+document.addEventListener('pointercancel',()=>{ drag=null; });
 
 /* 写真差し替え（枠に合わせて中央トリミング・枠は崩れない） */
 pick.addEventListener('change',()=>{
