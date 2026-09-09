@@ -65,6 +65,10 @@ body.placing main{cursor:crosshair}
 [contenteditable]:focus{outline:2px dashed var(--accent);outline-offset:1px;background:#fff}
 .cell.adjusting .frame{outline:3px solid #c9a882!important}
 .cell.adjusting img{touch-action:none}
+/* 🔀 入れ替え中：移す先の枠を選ぶ */
+body.swapping .frame{outline:3px dashed #c96f6f!important;outline-offset:-3px}
+#swapMsg{display:none;position:fixed;left:0;right:0;bottom:0;z-index:100;padding:14px 16px;text-align:center;
+  background:#c96f6f;color:#fff;font-size:15px;letter-spacing:.05em}
 .adjust-panel{position:fixed;left:0;right:0;bottom:0;z-index:100;display:none;
   background:rgba(253,249,244,.98);border-top:1px solid var(--line);padding:12px 16px;
   box-shadow:0 -2px 12px rgba(74,63,56,.15)}
@@ -95,6 +99,7 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 <button class="btn" id="addPageBtn" onclick="addPage()" style="display: none;">📄 ページ追加</button>
 <button class="btn" onclick="window.print()">🖨 印刷</button>
 <button class="btn primary" onclick="exportHtml()">💾 保存</button>
+<div id="swapMsg" class="noprint">🔀 移したい先の枠をタップしてください（やめる＝ここをタップ）</div>
 <div class="hint" id="hint" style="display: none;">タイトル＝ドラッグで好きな場所へ・タップで書き換え・✕で削除。「🏷タイトル追加」→置きたい場所をタップ。写真＝タップで差し替え・✕で削除。</div>
 </div>
 
@@ -144,6 +149,7 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 <button class="btn" onclick="nudge(-1,0)">⬅️</button>
 <button class="btn" onclick="nudge(1,0)">➡️</button>
 <button class="btn" onclick="replacePhoto()">🔁 差し替え</button>
+<button class="btn" onclick="startSwapPick()">🔀 入れ替え</button>
 <button class="btn primary" onclick="closeAdjust()">✅ 完了</button>
 <div class="hint" style="display:block">写真を指でドラッグすると見せる位置を動かせます</div>
 </div>
@@ -232,6 +238,14 @@ document.addEventListener('click',e=>{
     e.preventDefault(); e.stopPropagation(); return;
   }
   if(!editing) return;
+  /* 「🔀 入れ替え」中：次にタップした枠と入れ替える（ドラッグ不要・別ページでもOK） */
+  if(swapSrc){
+    if(e.target.closest('.toolbar')||e.target.closest('.adjust-panel')){ cancelSwapPick(); return; }
+    const fr=e.target.closest('.frame');
+    e.preventDefault(); e.stopPropagation();
+    if(fr && fr!==swapSrc.closest('.frame')) swapInto(swapSrc,fr);
+    cancelSwapPick(); return;
+  }
   const emptyF=e.target.closest('.frame.empty');
   if(emptyF){ targetFrame=emptyF; targetImg=null; pick.value=''; pick.click(); return; }
   const img=e.target.closest('.frame img');
@@ -274,6 +288,29 @@ function nudge(dx,dy){
   setT(adjImg,t);
 }
 function replacePhoto(){ if(adjImg){ targetImg=adjImg; pick.value=''; pick.click(); } }
+/* ---- 🔀 入れ替え（タップ2回・ドラッグ不要） ---- */
+let swapSrc=null;
+function swapInto(a,fr){
+  const srcFr=a.closest('.frame'), b=fr.querySelector('img');
+  if(b){
+    const t=a.src; a.src=b.src; b.src=t;
+    ['s','x','y','px','py'].forEach(k=>{const v=a.dataset[k];a.dataset[k]=b.dataset[k]||'';b.dataset[k]=v||'';});
+    [a,b].forEach(im=>setT(im,getT(im)));
+  }else{
+    fr.appendChild(a); fr.classList.remove('empty');
+    srcFr.innerHTML=''; srcFr.classList.add('empty');
+  }
+}
+function startSwapPick(){
+  if(!adjImg) return;
+  swapSrc=adjImg; closeAdjust();
+  document.body.classList.add('swapping');
+  document.getElementById('swapMsg').style.display='block';
+}
+function cancelSwapPick(){
+  swapSrc=null; document.body.classList.remove('swapping');
+  document.getElementById('swapMsg').style.display='none';
+}
 /* ＋／−ボタンで拡大縮小（iPadでスライダーやピンチが効かない時の確実な手段） */
 function zoomStep(dir){
   if(!adjImg) return;
