@@ -476,10 +476,18 @@ async function exportHtml(){
       return;
     }catch(e){ if(e&&e.name==='AbortError') return; window._fh=null; }
   }
-  const a=document.createElement('a');
   const d=new Date();
-  a.download='アルバム_日常の様子_'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.html';
-  a.href=URL.createObjectURL(blob); a.click();
+  const fname='アルバム_日常の様子_'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.html';
+  /* iPad/iPhone：共有シートで「ファイルに保存」「プリント」「AirDrop」を選べる（画面が飛ばない） */
+  if(navigator.share && navigator.canShare){
+    try{
+      const file=new File([blob],fname,{type:'text/html'});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:fname}); return; }
+    }catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a');
+  a.download=fname; a.href=URL.createObjectURL(blob); a.target='_blank'; a.rel='noopener';
+  document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   alert('📥 ダウンロードに保存されました（このブラウザは上書き保存に非対応）');
 }
