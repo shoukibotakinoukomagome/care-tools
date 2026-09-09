@@ -48,6 +48,8 @@ body.editing .frame.empty::after{content:'＋ 写真';font-size:16px;color:#b8a8
 .label .label-grip{display:none;cursor:move;color:#8a9a7b;user-select:none}
 body.editing .label .label-grip{display:inline}
 body.editing .frame{outline:2px dashed var(--accent);outline-offset:-2px;cursor:pointer}
+.editing .frame img{touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.cell.adjusting img{touch-action:none}
 body.editing .cell-del{display:block}
 body.editing .label{cursor:move;box-shadow:0 1px 6px rgba(138,154,123,.5)}
 body.editing .label .label-del{display:block}
@@ -381,24 +383,52 @@ adjZoom.addEventListener('input',()=>{
   const t=getT(adjImg); t.s=adjZoom.value/100; setT(adjImg,t);
 });
 /* 調整中: 写真ドラッグで位置移動 */
-let panStart=null;
+let panStart=null, pinchStart=null;
+const adjPointers=new Map();
+function adjPointerDistance(){
+  const p=[...adjPointers.values()];
+  return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+}
 document.addEventListener('pointerdown',e=>{
   if(!adjImg) return;
   if(e.target!==adjImg) return;
+  if(adjPointers.size>=2) return;
+  adjPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   const t=getT(adjImg);
-  panStart={pxl:e.clientX,pyl:e.clientY,...t,w:adjImg.closest('.frame').getBoundingClientRect().width};
+  if(adjPointers.size===2){
+    pinchStart={distance:Math.max(1,adjPointerDistance()),s:t.s};
+    panStart=null;
+  }else{
+    panStart={pxl:e.clientX,pyl:e.clientY,...t,w:adjImg.closest('.frame').getBoundingClientRect().width};
+  }
   adjImg.setPointerCapture(e.pointerId);
   e.preventDefault();
 });
 document.addEventListener('pointermove',e=>{
-  if(!panStart||!adjImg) return;
+  if(!adjImg||!adjPointers.has(e.pointerId)) return;
+  adjPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(adjPointers.size===2&&pinchStart){
+    const t=getT(adjImg);
+    t.s=Math.max(1,Math.min(3,pinchStart.s*adjPointerDistance()/pinchStart.distance));
+    setT(adjImg,t); adjZoom.value=t.s*100; e.preventDefault(); return;
+  }
+  if(!panStart) return;
   const t=getT(adjImg);
   const dx=(e.clientX-panStart.pxl)/panStart.w*100, dy=(e.clientY-panStart.pyl)/panStart.w*100;
   if(t.s>1){ t.x=panStart.x+dx/t.s; t.y=panStart.y+dy/t.s; }
   else{ t.px=panStart.px-dx; t.py=panStart.py-dy; }
   setT(adjImg,t); e.preventDefault();
+},{passive:false});
+document.addEventListener('pointerup',e=>{
+  adjPointers.delete(e.pointerId); pinchStart=null;
+  if(adjPointers.size===1&&adjImg){
+    const p=[...adjPointers.values()][0],t=getT(adjImg);
+    panStart={pxl:p.x,pyl:p.y,...t,w:adjImg.closest('.frame').getBoundingClientRect().width};
+  }else panStart=null;
 });
-document.addEventListener('pointerup',()=>{panStart=null});
+document.addEventListener('pointercancel',e=>{
+  adjPointers.delete(e.pointerId); panStart=null; pinchStart=null;
+});
 
 /* ラベルのドラッグ移動 */
 let drag=null, off={x:0,y:0};
@@ -480,48 +510,68 @@ async function exportHtml(){
 <script>
 /* ---- 写真ドラッグで入れ替え（編集モード中・写真を掴んで別の枠へ） ---- */
 let swDrag=null, swGhost=null, swMoved=false;
+function endSwap(e){
+  const dragState=swDrag, didMove=swMoved;
+  try{
+    if(e&&e.type==='pointerup'&&dragState&&didMove){
+      const el=document.elementFromPoint(e.clientX,e.clientY);
+      const fr=el&&el.closest('.frame');
+      const srcFr=dragState.img.closest('.frame');
+      if(fr&&fr!==srcFr){
+        const a=dragState.img, b=fr.querySelector('img');
+        if(b){
+          const t=a.src; a.src=b.src; b.src=t;
+          ['s','x','y','px','py'].forEach(k=>{const v=a.dataset[k];a.dataset[k]=b.dataset[k]||'';b.dataset[k]=v||'';});
+          [a,b].forEach(im=>setT(im,getT(im)));
+        }else{
+          fr.appendChild(a); fr.classList.remove('empty');
+          srcFr.innerHTML=''; srcFr.classList.add('empty');
+        }
+      }
+      const stop=ev=>{ev.stopPropagation();ev.preventDefault();};
+      document.addEventListener('click',stop,true);
+      setTimeout(()=>document.removeEventListener('click',stop,true),400);
+    }
+  }finally{
+    if(dragState){ clearTimeout(dragState.timer); dragState.img.style.opacity=''; }
+    if(swGhost) swGhost.remove();
+    document.querySelectorAll('body > .sw-ghost').forEach(el=>el.remove());
+    swDrag=null; swGhost=null; swMoved=false;
+  }
+}
 document.addEventListener('pointerdown',e=>{
+  endSwap();
   if(!editing||adjImg) return;
   if(e.target.closest('.label')||e.target.closest('.toolbar')||e.target.closest('.cell-del')) return;
   const img=e.target.closest('.frame img'); if(!img) return;
-  swDrag={img:img,sx:e.clientX,sy:e.clientY}; swMoved=false;
-},true);
-document.addEventListener('pointermove',e=>{
-  if(!swDrag) return;
-  if(!swMoved){
-    if(Math.hypot(e.clientX-swDrag.sx,e.clientY-swDrag.sy)<12) return;
+  swDrag={img:img,sx:e.clientX,sy:e.clientY,cx:e.clientX,cy:e.clientY,pointerId:e.pointerId,timer:null};
+  swDrag.timer=setTimeout(()=>{
+    if(!swDrag||swDrag.pointerId!==e.pointerId) return;
     swMoved=true;
-    swGhost=document.createElement('img'); swGhost.src=swDrag.img.src;
+    try{ swDrag.img.setPointerCapture(swDrag.pointerId); }catch(_){ }
+    swGhost=document.createElement('img'); swGhost.className='sw-ghost'; swGhost.src=swDrag.img.src;
     swGhost.style.cssText='position:fixed;width:84px;height:94px;object-fit:cover;z-index:9999;pointer-events:none;opacity:.85;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.4)';
     document.body.appendChild(swGhost);
     swDrag.img.style.opacity='.3';
+    swGhost.style.left=(swDrag.cx-42)+'px'; swGhost.style.top=(swDrag.cy-47)+'px';
+  },450);
+},true);
+document.addEventListener('pointermove',e=>{
+  if(!swDrag||e.pointerId!==swDrag.pointerId) return;
+  swDrag.cx=e.clientX; swDrag.cy=e.clientY;
+  if(!swMoved){
+    if(Math.hypot(e.clientX-swDrag.sx,e.clientY-swDrag.sy)>=12) endSwap(e);
+    return;
   }
   swGhost.style.left=(e.clientX-42)+'px'; swGhost.style.top=(e.clientY-47)+'px';
   e.preventDefault();
 },{passive:false});
-document.addEventListener('pointerup',e=>{
-  if(!swDrag) return;
-  if(swMoved){
-    swGhost.remove(); swGhost=null; swDrag.img.style.opacity='';
-    const el=document.elementFromPoint(e.clientX,e.clientY);
-    const fr=el&&el.closest('.frame');
-    const srcFr=swDrag.img.closest('.frame');
-    if(fr&&fr!==srcFr){
-      const a=swDrag.img, b=fr.querySelector('img');
-      if(b){
-        const t=a.src; a.src=b.src; b.src=t;
-        ['s','x','y','px','py'].forEach(k=>{const v=a.dataset[k];a.dataset[k]=b.dataset[k]||'';b.dataset[k]=v||'';});
-        [a,b].forEach(im=>setT(im,getT(im)));
-      }else{
-        fr.appendChild(a); fr.classList.remove('empty');
-        srcFr.innerHTML=''; srcFr.classList.add('empty');
-      }
-    }
-    const stop=ev=>{ev.stopPropagation();ev.preventDefault();};
-    document.addEventListener('click',stop,true);
-    setTimeout(()=>document.removeEventListener('click',stop,true),400);
-  }
-  swDrag=null;
-});
+document.addEventListener('pointerup',endSwap);
+document.addEventListener('pointercancel',endSwap);
+document.addEventListener('lostpointercapture',endSwap);
+/* iPad Safari: 長押しで掴んだ後・ズーム調整中は、指の動きをスクロールに取られないようにする */
+document.addEventListener('touchmove',e=>{
+  if(swMoved||(adjImg&&(panStart||pinchStart))) e.preventDefault();
+},{passive:false});
 </script>
 </body></html>
