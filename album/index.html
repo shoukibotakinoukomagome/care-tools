@@ -101,6 +101,8 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 <button class="btn" id="addPageBtn" onclick="addPage()" style="display: none;">📄 ページ追加</button>
 <button class="btn" onclick="window.print()">🖨 印刷</button>
 <button class="btn primary" onclick="exportHtml()">💾 保存</button>
+<button class="btn" id="resetBtn" onclick="resetAlbum()" style="display:none;">🗑 白紙に戻す</button>
+<span id="autoStat" style="font-size:12px;color:#8d7f74;white-space:nowrap;"></span>
 <div id="swapMsg" class="noprint">🔀 移したい先の枠をタップしてください（やめる＝ここをタップ）</div>
 <div class="hint" id="hint" style="display: none;">タイトル＝ドラッグで好きな場所へ・タップで書き換え・✕で削除。「🏷タイトル追加」→置きたい場所をタップ。写真＝タップで差し替え・✕で削除。</div>
 </div>
@@ -171,6 +173,7 @@ function toggleEdit(){
   document.getElementById('hint').style.display=editing?'block':'none';
   document.getElementById('labelBtn').style.display=editing?'':'none';
   document.getElementById('addPageBtn').style.display=editing?'':'none';
+  document.getElementById('resetBtn').style.display=editing?'':'none';
   if(editing) ensureLabelTools();
   document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false'));
   if(!editing) closeAdjust();
@@ -580,6 +583,44 @@ document.addEventListener('pointermove',e=>{
 document.addEventListener('pointerup',endSwap);
 document.addEventListener('pointercancel',endSwap);
 document.addEventListener('lostpointercapture',endSwap);
+
+/* ---- 自動保存（この端末のブラウザ内・IndexedDB）----
+   Safariを閉じても、次に同じURLを開くと前回の続きから始まる。💾保存（ファイル書き出し）とは別。
+   写真入りの保存済みファイルを開いた時は、その中身を優先して自動保存の復元はしない。 */
+const AS_DB='album25_autosave', AS_KEY='main';
+function asOpen(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open(AS_DB,1);
+  r.onupgradeneeded=()=>{ r.result.createObjectStore('kv'); };
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); }
+function asGet(){ return asOpen().then(db=>new Promise((res,rej)=>{ const t=db.transaction('kv','readonly').objectStore('kv').get(AS_KEY); t.onsuccess=()=>res(t.result||null); t.onerror=()=>rej(t.error); })).catch(()=>null); }
+function asSet(v){ return asOpen().then(db=>new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite').objectStore('kv').put(v,AS_KEY); t.onsuccess=()=>res(true); t.onerror=()=>rej(t.error); })).catch(()=>false); }
+function asDel(){ return asOpen().then(db=>new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite').objectStore('kv').delete(AS_KEY); t.onsuccess=()=>res(true); t.onerror=()=>rej(t.error); })).catch(()=>false); }
+const asMain=document.querySelector('main'), asStat=document.getElementById('autoStat');
+const asPristine=asMain.innerHTML;
+let asTimer=null, asReady=false;
+function asHasContent(){ return !!(asMain.querySelector('.frame img')||asMain.querySelector('.label')); }
+function asFmt(t){ const d=new Date(t); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function asSave(){
+  if(!asReady) return;
+  clearTimeout(asTimer);
+  asTimer=setTimeout(()=>{
+    asSet({html:asMain.innerHTML,t:Date.now()}).then(ok=>{ if(asStat) asStat.textContent=ok?('自動保存 '+asFmt(Date.now())):'（自動保存できません）'; });
+  },800);
+}
+new MutationObserver(()=>asSave()).observe(asMain,{subtree:true,childList:true,attributes:true,characterData:true});
+function resetAlbum(){
+  if(!confirm('写真とタイトルを全部消して白紙に戻します。よろしいですか？\n（💾保存したファイルは消えません）')) return;
+  asReady=false;
+  asDel().then(()=>{ asMain.innerHTML=asPristine; document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false')); if(asStat) asStat.textContent='白紙に戻しました'; asReady=true; });
+}
+asGet().then(saved=>{
+  if(saved && saved.html && !asHasContent()){
+    asMain.innerHTML=saved.html;
+    document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable','false'));
+    if(asStat) asStat.textContent='前回の続き（'+asFmt(saved.t)+'）';
+  }
+  /* 復元そのものを「変更」として保存し直さないよう、少し待ってから自動保存を有効にする */
+  setTimeout(()=>{ asReady=true; },1200);
+});
 /* iPad Safari: 長押しで掴んだ後・ズーム調整中は、指の動きをスクロールに取られないようにする */
 document.addEventListener('touchmove',e=>{
   if(swMoved||(adjImg&&(panStart||pinchStart))) e.preventDefault();
