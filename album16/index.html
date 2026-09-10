@@ -26,7 +26,7 @@ body{background:#fff;color:var(--ink);
 .hint{width:100%;font-size:12px;color:#8d7f74;padding:2px 4px 6px}
 main{max-width:820px;margin:0 auto;padding:8px}
 .sec{position:relative;background:#fff;box-shadow:0 2px 12px rgba(74,63,56,.15);
-  aspect-ratio:200/287;padding:2mm;margin:0 auto 14px;
+  aspect-ratio:210/297;padding:2mm;margin:0 auto 14px;
   display:flex;flex-direction:column}
 .sec-del{display:none;position:absolute;top:-16px;right:6px;z-index:20;
   border:1px solid #c96f6f;background:#fff;color:#c96f6f;border-radius:18px;
@@ -113,6 +113,7 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 <button class="btn" id="labelBtn" onclick="startLabel()" style="display: none;">🏷 タイトル追加</button>
 <button class="btn" id="addPageBtn" onclick="addPage()" style="display: none;">📄 ページ追加</button>
 <button class="btn" onclick="window.print()">🖨 印刷</button>
+<button class="btn" id="pdfBtn" onclick="makePdf()">📄 PDFで印刷</button>
 <button class="btn primary" onclick="exportHtml()">💾 保存</button>
 <button class="btn" id="resetBtn" onclick="resetAlbum()" style="display:none;">🗑 白紙に戻す</button>
 <span id="autoStat" style="font-size:12px;color:#8d7f74;white-space:nowrap;"></span>
@@ -630,5 +631,34 @@ asGet().then(saved=>{
 document.addEventListener('touchmove',e=>{
   if(swMoved||(adjImg&&(panStart||pinchStart))) e.preventDefault();
 },{passive:false});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* ---- 📄 PDFで印刷：Safariの印刷を使わずページをそのままPDFにする（URL・日時のヘッダー/フッターが付かない） ---- */
+async function makePdf(){
+  if(typeof html2canvas!=='function'||!window.jspdf){ alert('PDF機能の読み込みに失敗しました。通信状態を確認して、もう一度開いてください。'); return; }
+  if(editing) toggleEdit();
+  closeAdjust();
+  const btn=document.getElementById('pdfBtn'); const old=btn.textContent; btn.textContent='作成中…'; btn.disabled=true;
+  try{
+    const secs=[...document.querySelectorAll('main .sec')];
+    const pdf=new jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+    for(let i=0;i<secs.length;i++){
+      const cv=await html2canvas(secs[i],{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+      if(i>0) pdf.addPage();
+      pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297,undefined,'FAST');
+    }
+    const blob=pdf.output('blob');
+    const d=new Date(), fname='アルバム_'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.pdf';
+    if(navigator.share&&navigator.canShare){
+      const file=new File([blob],fname,{type:'application/pdf'});
+      if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:fname}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+    }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.target='_blank'; a.rel='noopener';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){ alert('PDFを作れませんでした：'+(e&&e.message?e.message:e)); }
+  finally{ btn.textContent=old; btn.disabled=false; }
+}
 </script>
 </body></html>
