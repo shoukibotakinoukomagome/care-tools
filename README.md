@@ -9,3 +9,7 @@ https://shoukibotakinoukomagome.github.io/care-tools/album/
 ## album16/
 日常の様子アルバム（16枚版・4列×4段）。album/ の25枚版と同じ機能。
 https://shoukibotakinoukomagome.github.io/care-tools/album16/
+
+## album20/
+日常の様子アルバム（20枚版・4列×5段・横写真は自動で横長枠）。見出し行・一言欄・枠線・PDF印刷つき。
+https://shoukibotakinoukomagome.github.io/care-tools/album20/
