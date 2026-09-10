@@ -58,7 +58,7 @@ function framePath(c,f){c.beginPath();f.poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]
 function insideFrame(f,x,y){let inside=false;const p=f.poly;for(let i=0,j=p.length-1;i<p.length;j=i++){if(((p[i][1]>y)!==(p[j][1]>y))&&(x<(p[j][0]-p[i][0])*(y-p[i][1])/(p[j][1]-p[i][1])+p[i][0]))inside=!inside;}return inside;}
 function renderCard(canvas,page,editing=true){
  const c=canvas.getContext('2d');c.save();c.setTransform(canvas.width/178,0,0,canvas.height/127,0,0);c.clearRect(0,0,178,127);c.fillStyle='#fff';c.fillRect(0,0,178,127);
- if(backgroundArt){const r=PAGE_CROPS[page];c.drawImage(backgroundArt,...r,0,0,178,127);}
+ if(backgroundArt){const r=PAGE_CROPS[page];const src=(page===0&&state.message!==DEFAULT_MESSAGE&&cleanedArt())||backgroundArt;c.drawImage(src,...r,0,0,178,127);}
  frames.forEach((f,i)=>{if(f.page!==page)return;const p=state.photos[i],im=pictures[i];
   c.save();framePath(c,f);c.clip();
   if(im){const scale=Math.max(f.w/im.width,f.h/im.height)*p.zoom,iw=im.width*scale,ih=im.height*scale;c.drawImage(im,f.x-(iw-f.w)*p.x,f.y-(ih-f.h)*p.y,iw,ih);}
@@ -66,12 +66,12 @@ function renderCard(canvas,page,editing=true){
   c.restore();if(editing&&i===selected){c.strokeStyle='#873342';c.lineWidth=.4;c.setLineDash([1.2,1.2]);framePath(c,f);c.stroke();c.setLineDash([]);}
  });
  // Original lettering stays intact until the user changes the message.
- if(page===0&&state.message!==DEFAULT_MESSAGE){c.fillStyle=letteringBg();c.fillRect(46,106,87,17.3);c.fillStyle='#745021';c.textAlign='center';c.textBaseline='middle';let size=4.3,lines=[];do{c.font=size+'px '+fontSans;lines=wrapText(c,state.message.trim(),86);if(lines.length<=2)break;size-=.15;}while(size>2);lines.slice(0,2).forEach((line,i)=>c.fillText(line,89,lines.length===1?114.7:110.8+i*7.8,86));}
+ if(page===0&&state.message!==DEFAULT_MESSAGE){c.fillStyle='#745021';c.textAlign='center';c.textBaseline='middle';let size=4.3,lines=[];do{c.font=size+'px '+fontSans;lines=wrapText(c,state.message.trim(),86);if(lines.length<=2)break;size-=.15;}while(size>2);lines.slice(0,2).forEach((line,i)=>c.fillText(line,89,lines.length===1?114.7:110.8+i*7.8,86));}
  c.restore();return canvas;
 }
-/* 文字を差し替える時に元の文字を隠す色＝その場所の絵の地の色（白で塗ると四角く浮くため）。デザインごとに1回だけ計算 */
-const letteringBgCache={};
-function letteringBg(){const key=state.design;if(letteringBgCache[key])return letteringBgCache[key];try{if(!backgroundArt)return '#fff';const r=PAGE_CROPS[0],S=4,t=document.createElement('canvas');t.width=178*S;t.height=127*S;const tc=t.getContext('2d');tc.drawImage(backgroundArt,...r,0,0,t.width,t.height);const d=tc.getImageData(Math.round(46.5*S),Math.round(106.5*S),Math.round(86*S),Math.round(16.3*S)).data;const cnt={};for(let i=0;i<d.length;i+=4){const R=d[i],G=d[i+1],B=d[i+2];if(Math.min(R,G,B)<190)continue;const k=((R>>3)<<10)|((G>>3)<<5)|(B>>3);cnt[k]=(cnt[k]||0)+1;}let best=-1,bn=0;for(const k in cnt){if(cnt[k]>bn){bn=cnt[k];best=Number(k);}}if(best<0)return letteringBgCache[key]='#fff';const R=((best>>10)&31)*8+4,G=((best>>5)&31)*8+4,B=(best&31)*8+4;return letteringBgCache[key]='rgb('+R+','+G+','+B+')';}catch(e){return '#fff';}}
+/* 文字を差し替える時：絵に描き込まれた元の文字（こげ茶の線）だけを消し、周りの色（空・パステルの輪）でつなぐ。白い四角で塗ると帯が白く抜けるため。デザインごとに1回だけ計算してキャッシュ */
+const cleanArtCache={};
+function cleanedArt(){const key=state.design;if(cleanArtCache[key])return cleanArtCache[key];if(!backgroundArt)return null;try{const r=PAGE_CROPS[0];const cv=document.createElement('canvas');cv.width=backgroundArt.width;cv.height=backgroundArt.height;const ctx=cv.getContext('2d');ctx.drawImage(backgroundArt,0,0);const X=Math.floor(r[0]+46.5/178*r[2]),Y=Math.floor(r[1]+106.5/127*r[3]),W=Math.ceil(86/178*r[2]),H=Math.ceil(16.3/127*r[3]);const img=ctx.getImageData(X,Y,W,H),d=img.data,N=W*H;const mask=new Uint8Array(N);for(let i=0;i<N;i++){const L=0.3*d[i*4]+0.59*d[i*4+1]+0.11*d[i*4+2];if(L<135)mask[i]=1;}const m2=new Uint8Array(N),R=2;for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!mask[y*W+x])continue;for(let dy=-R;dy<=R;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;for(let dx=-R;dx<=R;dx++){const xx=x+dx;if(xx>=0&&xx<W)m2[yy*W+xx]=1;}}}for(let y=0;y<H;y++){let x=0;while(x<W){if(!m2[y*W+x]){x++;continue;}const x0=x;while(x<W&&m2[y*W+x])x++;const x1=x,li=x0-1,ri=x1,hasL=li>=0,hasR=ri<W;for(let k=x0;k<x1;k++){const t=(hasL&&hasR)?(k-li)/(ri-li):0;for(let ch=0;ch<3;ch++){const a=hasL?d[(y*W+li)*4+ch]:(hasR?d[(y*W+ri)*4+ch]:255),b=hasR?d[(y*W+ri)*4+ch]:a;d[(y*W+k)*4+ch]=Math.round(a+(b-a)*t);}}}}ctx.putImageData(img,X,Y);return cleanArtCache[key]=cv;}catch(e){return null;}}
 function draw(){if(!backgroundArt)return;renderCard($('card0'),0);renderCard($('card1'),1);}
 function notify(t){$('status').textContent=t;}
 function select(i){if(!Number.isInteger(i)||i<0||i>3)return;selected=i;const p=state.photos[i];$('selection').textContent=(i<1?'上段':'下段')+'・写真'+(i+1);$('zoom').value=p.zoom;$('panX').value=p.x;$('panY').value=p.y;['zoom','panX','panY','center'].forEach(id=>$(id).disabled=busy||!pictures[i]);[...$('choices').children].forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)));draw();}
