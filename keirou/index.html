@@ -23,6 +23,7 @@
 <aside aria-label="編集">
 <label for="design">デザインを選ぶ</label><select id="design"><option value="square-strong">四角・濃い枠</option><option value="square-soft" selected>四角・薄い枠</option><option value="round-strong">丸・濃い枠</option><option value="round-soft">丸・薄い枠</option></select><p class="small">枠の形と濃さを選べます。写真は引き継がれます。</p><hr>
 <label for="message">お祝いメッセージ</label><textarea id="message" placeholder="お祝いメッセージを入力（2行まで）" maxlength="80"></textarea>
+<label for="msgFont">文字の書体</label><select id="msgFont"><option value="maru">丸ゴシック（標準）</option><option value="klee">手書き風（クレー）</option><option value="kyokasho">教科書体</option><option value="tsukushi">筑紫丸ゴシック</option><option value="gothic">ゴシック</option><option value="gothicb">太ゴシック</option><option value="mincho">明朝</option></select>
 <div class="adjust"><div><label for="msgX">文字の左右</label><input id="msgX" type="range" min="-30" max="30" step="0.5" value="0"></div><div><label for="msgY">文字の上下</label><input id="msgY" type="range" min="-10" max="10" step="0.5" value="0"></div></div><button id="msgReset" type="button" class="full">文字の位置を真ん中に戻す</button>
 <hr><fieldset><legend>写真を入れる・調整する</legend><div class="photo-choices" id="choices"></div></fieldset>
 <p class="small" id="selection"></p><button id="choose" class="primary full">写真を選ぶ</button><input id="photoFile" type="file" accept="image/*" hidden>
@@ -42,7 +43,7 @@
 const W=2102,H=1500;
 let frames=[];
 const blank=()=>({src:'',zoom:1,x:0.5,y:0.5});
-let state={format:'keiro-2l-designs-v1',design:'square-soft',name:'',message:'敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。',msgX:0,msgY:0,photos:Array.from({length:4},blank)};
+let state={format:'keiro-2l-designs-v1',design:'square-soft',name:'',message:'敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。',msgX:0,msgY:0,msgFont:'maru',photos:Array.from({length:4},blank)};
 let pictures=Array(4).fill(null),selected=0,dirty=false,busy=false,exportURL='';
 let backgroundArt=null;
 let pickerIndex=0,drawRequest=0,pendingPages=new Set();
@@ -53,6 +54,17 @@ const fontSerif='"Hiragino Mincho ProN", "Yu Mincho", serif';
 const fontSans='"Hiragino Sans", "Yu Gothic", sans-serif';
 /* 差し替え文字用：絵の手描き文字に近い太い丸ゴシック（iPad/Macは丸ゴ・Windowsは太ゴシックに落ちる） */
 const fontMaru='"Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN W4", "BIZ UDPGothic", "Meiryo", "Hiragino Sans", "Yu Gothic", sans-serif';
+/* 書体の選択肢（iPad/Macに入っている字体だけ。外部フォントは読み込まない）まさみ「文字を変えると書体も変わるから何個か入れといて」2026-09-11 */
+const FONTS={
+ maru:{label:'丸ゴシック（標準）',family:fontMaru,weight:'',stroke:0.05},
+ klee:{label:'手書き風（クレー）',family:'"Klee", "Klee One", "Hiragino Maru Gothic ProN", sans-serif',weight:'',stroke:0.07},
+ kyokasho:{label:'教科書体',family:'"YuKyokasho", "游教科書体", "Hiragino Mincho ProN", serif',weight:'',stroke:0.06},
+ tsukushi:{label:'筑紫丸ゴシック',family:'"Tsukushi A Round Gothic", "TsukuARdGothic-Regular", "Hiragino Maru Gothic ProN", sans-serif',weight:'',stroke:0.05},
+ gothic:{label:'ゴシック',family:fontSans,weight:'',stroke:0},
+ gothicb:{label:'太ゴシック',family:fontSans,weight:'bold ',stroke:0},
+ mincho:{label:'明朝',family:'"Hiragino Mincho ProN", "Yu Mincho", serif',weight:'',stroke:0.04}
+};
+function fontSpec(){return FONTS[state.msgFont]||FONTS.maru;}
 function wrapText(ctx,text,maxWidth){const lines=[];for(const paragraph of text.split('\n')){let line='';for(const ch of paragraph){if(line&&ctx.measureText(line+ch).width>maxWidth){lines.push(line);line=ch}else line+=ch}lines.push(line)}return lines;}
 
 const DEFAULT_MESSAGE='敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。';
@@ -69,7 +81,7 @@ function renderCard(canvas,page,editing=true){
   c.restore();if(editing&&i===selected){c.strokeStyle='#873342';c.lineWidth=.4;c.setLineDash([1.2,1.2]);framePath(c,f);c.stroke();c.setLineDash([]);}
  });
  // Original lettering stays intact until the user changes the message.
- if(page===0&&state.message!==DEFAULT_MESSAGE){c.fillStyle='#745021';c.strokeStyle='#745021';c.lineJoin='round';c.lineCap='round';c.textAlign='center';c.textBaseline='middle';let size=4.6,lines=[];/* 字体＝絵の手描き文字に近い丸ゴシックの標準の太さ（太字＋太い縁取りは「潰れる」・細いゴシックは「細い」と却下・2026-09-11） */const paras=state.message.trim().split('\n').filter(s=>s.trim()).slice(0,2);/* まず「1行目・2行目をそれぞれ1行に収める」大きさを探す（「に。」だけが次の行に落ちるのを防ぐ） */do{c.font=size+'px '+fontMaru;if(paras.every(p=>c.measureText(p.trim()).width<=86))break;size-=.1;}while(size>3.2);lines=paras.every(p=>c.measureText(p.trim()).width<=86)?paras.map(p=>p.trim()):null;if(!lines){size=4.6;do{c.font=size+'px '+fontMaru;lines=wrapText(c,state.message.trim(),86);if(lines.length<=2)break;size-=.15;}while(size>2);}const mx=89+(Number(state.msgX)||0),my=Number(state.msgY)||0;/* 文字の位置はスライダーで動かせる（mm） */c.lineWidth=size*0.05;/* ほんの少しだけ太らせる（縁取りが目立たない程度） */lines.slice(0,2).forEach((line,i)=>{const y=(lines.length===1?114.7:110.8+i*7.8)+my;c.strokeText(line,mx,y,86);c.fillText(line,mx,y,86);});}
+ if(page===0&&state.message!==DEFAULT_MESSAGE){c.fillStyle='#745021';c.strokeStyle='#745021';c.lineJoin='round';c.lineCap='round';c.textAlign='center';c.textBaseline='middle';let size=4.6,lines=[];/* 字体＝絵の手描き文字に近い丸ゴシックの標準の太さ（太字＋太い縁取りは「潰れる」・細いゴシックは「細い」と却下・2026-09-11） */const paras=state.message.trim().split('\n').filter(s=>s.trim()).slice(0,2);/* まず「1行目・2行目をそれぞれ1行に収める」大きさを探す（「に。」だけが次の行に落ちるのを防ぐ） */do{c.font=fontSpec().weight+size+'px '+fontSpec().family;if(paras.every(p=>c.measureText(p.trim()).width<=86))break;size-=.1;}while(size>3.2);lines=paras.every(p=>c.measureText(p.trim()).width<=86)?paras.map(p=>p.trim()):null;if(!lines){size=4.6;do{c.font=fontSpec().weight+size+'px '+fontSpec().family;lines=wrapText(c,state.message.trim(),86);if(lines.length<=2)break;size-=.15;}while(size>2);}const mx=89+(Number(state.msgX)||0),my=Number(state.msgY)||0;/* 文字の位置はスライダーで動かせる（mm） */c.lineWidth=size*fontSpec().stroke;/* 書体ごとにほんの少しだけ太らせる（縁取りが目立たない程度） */lines.slice(0,2).forEach((line,i)=>{const y=(lines.length===1?114.7:110.8+i*7.8)+my;if(c.lineWidth>0)c.strokeText(line,mx,y,86);c.fillText(line,mx,y,86);});}
  c.restore();return canvas;
 }
 /* 文字を差し替える時：絵に描き込まれた元の文字（こげ茶の線）だけを消し、周りの色（空・パステルの輪）でつなぐ。白い四角で塗ると帯が白く抜けるため。デザインごとに1回だけ計算してキャッシュ */
@@ -123,15 +135,16 @@ $('photoFile').onchange=async e=>{const file=e.target.files[0],index=pickerIndex
 for(const [id,key] of [['zoom','zoom'],['panX','x'],['panY','y']])$(id).oninput=e=>{if(busy)return;state.photos[selected][key]=Number(e.target.value);dirty=true;queueDraw(frames[selected].page);};
 for(const [id,key] of [['msgX','msgX'],['msgY','msgY']])$(id).oninput=e=>{if(busy)return;state[key]=Number(e.target.value);dirty=true;queueDraw(0);};
 $('msgReset').onclick=()=>{state.msgX=0;state.msgY=0;$('msgX').value=0;$('msgY').value=0;dirty=true;queueDraw(0);};
+$('msgFont').onchange=e=>{if(busy)return;state.msgFont=FONTS[e.target.value]?e.target.value:'maru';dirty=true;queueDraw(0);};
 $('center').onclick=()=>{if(busy)return;Object.assign(state.photos[selected],{zoom:1,x:.5,y:.5});dirty=true;select(selected);};
 $('message').oninput=e=>{const value=e.target.value.split('\n').slice(0,2).join('\n');e.target.value=value;state.message=value;dirty=true;queueDraw(0);};
 $('workName').oninput=e=>{state.name=e.target.value;dirty=true;};
 $('save0').onclick=()=>saveImage(0);$('save1').onclick=()=>saveImage(1);$('closeDialog').onclick=()=>{$('exportDialog').close();$('exportImage').removeAttribute('src');$('imageLink').removeAttribute('href');};
 $('saveWork').onclick=()=>{download(new Blob([JSON.stringify(state)],{type:'application/json'}),filename('編集データ.json'));dirty=false;notify('保存先で編集データを確認してください。');};
 $('loadWork').onclick=()=>{if(!dirty||confirm('現在の編集内容を置き換えます。必要な内容は保存しましたか？'))$('workFile').click();};
-function validateWork(s){if(s&&s.design!==undefined&&!Object.prototype.hasOwnProperty.call(DESIGNS,s.design))throw new Error('デザインの情報を読み込めませんでした。');if(!s||!['keiro-2l-four-v1','keiro-2l-designs-v1'].includes(s.format)||typeof s.name!=='string'||s.name.length>60||typeof s.message!=='string'||s.message.length>80||s.message.split('\n').length>2||!Array.isArray(s.photos)||s.photos.length!==4)throw new Error('このフレームの編集データを選んでください。');for(const p of s.photos){if(!p||typeof p.src!=='string'||(p.src&&!/^data:image\/(jpeg|png|webp);base64,/.test(p.src))||!Number.isFinite(p.zoom)||p.zoom<1||p.zoom>3||!Number.isFinite(p.x)||p.x<0||p.x>1||!Number.isFinite(p.y)||p.y<0||p.y>1)throw new Error('編集データの写真情報を読み込めませんでした。');}return {...s,format:'keiro-2l-designs-v1',design:s.design||state.design,msgX:Number.isFinite(s.msgX)?Math.max(-40,Math.min(40,s.msgX)):0,msgY:Number.isFinite(s.msgY)?Math.max(-15,Math.min(15,s.msgY)):0};}
+function validateWork(s){if(s&&s.design!==undefined&&!Object.prototype.hasOwnProperty.call(DESIGNS,s.design))throw new Error('デザインの情報を読み込めませんでした。');if(!s||!['keiro-2l-four-v1','keiro-2l-designs-v1'].includes(s.format)||typeof s.name!=='string'||s.name.length>60||typeof s.message!=='string'||s.message.length>80||s.message.split('\n').length>2||!Array.isArray(s.photos)||s.photos.length!==4)throw new Error('このフレームの編集データを選んでください。');for(const p of s.photos){if(!p||typeof p.src!=='string'||(p.src&&!/^data:image\/(jpeg|png|webp);base64,/.test(p.src))||!Number.isFinite(p.zoom)||p.zoom<1||p.zoom>3||!Number.isFinite(p.x)||p.x<0||p.x>1||!Number.isFinite(p.y)||p.y<0||p.y>1)throw new Error('編集データの写真情報を読み込めませんでした。');}return {...s,format:'keiro-2l-designs-v1',design:s.design||state.design,msgX:Number.isFinite(s.msgX)?Math.max(-40,Math.min(40,s.msgX)):0,msgY:Number.isFinite(s.msgY)?Math.max(-15,Math.min(15,s.msgY)):0,msgFont:FONTS[s.msgFont]?s.msgFont:'maru'};}
 $('workFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;setBusy(true);try{if(file.size>70*1024*1024)throw new Error('編集データが大きすぎます。');const s=validateWork(JSON.parse(await file.text()));const art=s.design===state.design?backgroundArt:await loadImage(DESIGNS[s.design].image);const imgs=[];for(const p of s.photos){imgs.push(p.src?await loadImage(p.src):null);}state=s;pictures=imgs;activateDesign(s.design,art);$('message').value=s.message;$('workName').value=s.name;dirty=false;select(0);notify('編集内容を読み込みました。')}catch(e){notify(e instanceof SyntaxError?'編集データを読み込めませんでした。':e.message)}finally{setBusy(false)}};
-$('next').onclick=()=>{if(!confirm('写真4枚と作業名を空にして、次の人を作ります。必要な写真・編集内容は保存しましたか？'))return;state={format:'keiro-2l-designs-v1',design:state.design,name:'',message:state.message,msgX:state.msgX||0,msgY:state.msgY||0,photos:Array.from({length:4},blank)};pictures=Array(4).fill(null);$('workName').value='';dirty=false;select(0);notify('写真を入れ替えてください。メッセージは引き継いでいます。');};
+$('next').onclick=()=>{if(!confirm('写真4枚と作業名を空にして、次の人を作ります。必要な写真・編集内容は保存しましたか？'))return;state={format:'keiro-2l-designs-v1',design:state.design,name:'',message:state.message,msgX:state.msgX||0,msgY:state.msgY||0,msgFont:state.msgFont||'maru',photos:Array.from({length:4},blank)};pictures=Array(4).fill(null);$('workName').value='';dirty=false;select(0);notify('写真を入れ替えてください。メッセージは引き継いでいます。');};
 $('print').onclick=()=>{if(pictures.some(p=>!p)){notify('写真4枚を入れてから印刷してください。');return}const area=$('printArea');area.replaceChildren();for(let i=0;i<2;i++){const im=new Image();const output=exportCanvas(i);im.src=output.toDataURL('image/jpeg',.98);output.width=1;output.height=1;area.appendChild(im);}Promise.all([...area.children].map(im=>im.decode())).then(()=>window.print()).catch(()=>notify('印刷用画像を準備できませんでした。もう一度お試しください。'));};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 
@@ -146,7 +159,7 @@ async function changeDesign(id){
  finally{setBusy(false);}
 }
 $('design').onchange=e=>changeDesign(e.target.value);
-$('message').value=state.message;$('msgX').value=Number(state.msgX)||0;$('msgY').value=Number(state.msgY)||0;
+$('message').value=state.message;$('msgX').value=Number(state.msgX)||0;$('msgY').value=Number(state.msgY)||0;$('msgFont').value=FONTS[state.msgFont]?state.msgFont:'maru';
 setBusy(true);
 const artReady=loadImage(DESIGNS[state.design].image).then(im=>{activateDesign(state.design,im);setBusy(false);}).catch(()=>notify('イラストを読み込めませんでした。ページを開き直してください。'));
 </script></body></html>
