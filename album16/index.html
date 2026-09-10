@@ -35,8 +35,17 @@ body.editing .sec-del{display:block}
 .secfoot{flex:0 0 auto;text-align:center;font-size:10px;color:#a3958a;letter-spacing:.08em;padding-top:3px;outline:none}
 body.editing .secfoot{outline:1px dashed var(--accent)}
 .grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:3px;min-height:0;width:100%}
-.cell{position:relative;min-width:0;min-height:0;display:flex}
-.frame{flex:1;overflow:hidden;background:#eee;border-radius:0}
+.cell{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;gap:2px}
+/* 見出し行（7月版と同じ：タイトル＋日付・下に線） */
+.page-head{flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  border-bottom:2px solid var(--accent);padding:2px 4px 6px;margin-bottom:8px}
+.page-head h2{font-size:20px;font-weight:600;letter-spacing:.08em;outline:none}
+.page-date{font-size:13px;color:#8d7f74;letter-spacing:.06em;white-space:nowrap;outline:none}
+/* 写真の下の一言（サムネの説明） */
+.cell figcaption.cap{flex:0 0 auto;font-size:11px;line-height:1.4;color:#6d5f54;min-height:1.4em;padding:0 2px;letter-spacing:.03em;outline:none;overflow:hidden}
+body.editing .cell figcaption.cap{background:#fff;border-radius:3px;box-shadow:inset 0 0 0 1px var(--line)}
+body.editing .page-head h2, body.editing .page-date{background:#fff;border-radius:3px;box-shadow:inset 0 0 0 1px var(--line);padding:0 6px}
+.frame{flex:1;min-height:0;overflow:hidden;background:#eee;border-radius:0}
 .frame img{width:100%;height:100%;object-fit:cover;display:block}
 .frame.empty{display:flex;align-items:center;justify-content:center;background:#f5efe8}
 body.editing .frame.empty::after{content:'＋ 写真';font-size:16px;color:#b8a894}
@@ -87,6 +96,10 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
   .frame.empty{visibility:hidden}
   .label{font-size:10pt;background:rgba(255,255,255,.9)}
   .secfoot{font-size:8pt;padding-top:1mm}
+  .page-head{padding:0 1mm 2mm;margin-bottom:2.5mm}
+  .page-head h2{font-size:15pt}
+  .page-date{font-size:9pt}
+  .cell figcaption.cap{font-size:7.5pt;line-height:1.35;min-height:1.35em}
   @page{size:A4 portrait;margin:0}
 }
 /* ブラウザが付けるヘッダー/フッター（URL・日時・ページ番号）を出さないため、余白ゼロを最上位でも宣言 */
@@ -110,23 +123,24 @@ footer{max-width:900px;margin:6px auto 30px;text-align:center;font-size:11px;col
 <main>
 <section class="sec">
 <button class="sec-del noprint">このページを削除</button>
+<header class="page-head"><h2 class="ph-title" contenteditable="false">日常の様子</h2><p class="page-date" contenteditable="false">2026年　月</p></header>
 <div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
 </div>
 <div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
 </section>
@@ -166,15 +180,15 @@ function toggleEdit(){
   document.getElementById('addPageBtn').style.display=editing?'':'none';
   document.getElementById('resetBtn').style.display=editing?'':'none';
   if(editing) ensureLabelTools();
-  document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false'));
+  document.querySelectorAll('.label-text,.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false'));
   if(!editing) closeAdjust();
 }
-document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable','false'));
+document.querySelectorAll('.label-text,.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable','false'));
 
 function addPage(){
   const sec=document.getElementById('secTpl').content.firstElementChild.cloneNode(true);
   document.querySelector('main .sec:last-of-type').after(sec);
-  if(editing) sec.querySelector('.secfoot').setAttribute('contenteditable','true');
+  if(editing) sec.querySelectorAll('.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable','true'));
   sec.scrollIntoView({behavior:'smooth'});
 }
 
@@ -489,23 +503,24 @@ async function exportHtml(){
 <template id="secTpl">
 <section class="sec">
 <button class="sec-del noprint">このページを削除</button>
+<header class="page-head"><h2 class="ph-title" contenteditable="false">日常の様子</h2><p class="page-date" contenteditable="false">2026年　月</p></header>
 <div class="grid">
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
-<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
+<figure class="cell"><button class="cell-del">✕</button><div class="frame empty"></div><figcaption class="cap" contenteditable="false"></figcaption></figure>
 </div>
 <div class="secfoot" contenteditable="false">小規模多機能こまごめ・運営推進会議資料</div>
 </section>
@@ -600,12 +615,12 @@ new MutationObserver(()=>asSave()).observe(asMain,{subtree:true,childList:true,a
 function resetAlbum(){
   if(!confirm('写真とタイトルを全部消して白紙に戻します。よろしいですか？\n（💾保存したファイルは消えません）')) return;
   asReady=false;
-  asDel().then(()=>{ asMain.innerHTML=asPristine; document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false')); if(asStat) asStat.textContent='白紙に戻しました'; asReady=true; });
+  asDel().then(()=>{ asMain.innerHTML=asPristine; document.querySelectorAll('.label-text,.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable',editing?'true':'false')); if(asStat) asStat.textContent='白紙に戻しました'; asReady=true; });
 }
 asGet().then(saved=>{
   if(saved && saved.html && !asHasContent()){
     asMain.innerHTML=saved.html;
-    document.querySelectorAll('.label-text,.secfoot').forEach(el=>el.setAttribute('contenteditable','false'));
+    document.querySelectorAll('.label-text,.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable','false'));
     if(asStat) asStat.textContent='前回の続き（'+asFmt(saved.t)+'）';
   }
   /* 復元そのものを「変更」として保存し直さないよう、少し待ってから自動保存を有効にする */
