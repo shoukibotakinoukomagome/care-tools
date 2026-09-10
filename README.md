@@ -7,5 +7,5 @@
 https://shoukibotakinoukomagome.github.io/care-tools/album/
 
 ## album20/
-日常の様子アルバム（20枚版・4列×5段）。album/ の25枚版と同じ機能。
+日常の様子アルバム（20枚版・5列×4段）。album/ の25枚版と同じ機能。
 https://shoukibotakinoukomagome.github.io/care-tools/album20/
