@@ -196,6 +196,7 @@ document.querySelectorAll('.label-text,.secfoot,.cap,.ph-title,.page-date').forE
 function addPage(){
   const sec=document.getElementById('secTpl').content.firstElementChild.cloneNode(true);
   document.querySelector('main .sec:last-of-type').after(sec);
+  fillDateDefaults(sec);
   if(editing) sec.querySelectorAll('.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable','true'));
   sec.scrollIntoView({behavior:'smooth'});
 }
@@ -387,6 +388,11 @@ function startSwapPick(){
 function cancelSwapPick(){
   swapSrc=null; document.body.classList.remove('swapping');
   document.getElementById('swapMsg').style.display='none';
+}
+/* 見出しの日付：初期値「2026年　月」のままなら、開いた時／ページ追加時に今の年月を入れる（書き換えは自由） */
+function fillDateDefaults(root){
+  const d=new Date(), txt=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+  (root||document).querySelectorAll('.page-date').forEach(el=>{ if(el.textContent.trim()==='2026年　月'||el.textContent.trim()==='') el.textContent=txt; });
 }
 /* ＋／−ボタンで拡大縮小（iPadでスライダーやピンチが効かない時の確実な手段） */
 function zoomStep(dir){
@@ -673,6 +679,7 @@ asGet().then(saved=>{
     document.querySelectorAll('.label-text,.secfoot,.cap,.ph-title,.page-date').forEach(el=>el.setAttribute('contenteditable','false'));
     if(asStat) asStat.textContent='前回の続き（'+asFmt(saved.t)+'）';
   }
+  fillDateDefaults();
   /* 復元そのものを「変更」として保存し直さないよう、少し待ってから自動保存を有効にする */
   setTimeout(()=>{ asReady=true; },1200);
 });
