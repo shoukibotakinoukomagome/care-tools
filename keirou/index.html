@@ -17,15 +17,15 @@
 </style>
 </head>
 <body>
-<header><h1>敬老の日 写真フレーム・４種類</h1><p class="small">横向き2L判（178 × 127 mm）× 2枚。上段１枚・下段３枚の写真を入れて、上下に並べて飾ります。</p></header>
+<header><h1>敬老の日 写真フレーム・丸枠２種類</h1><p class="small">横向き2L判（178 × 127 mm）× 2枚。上段１枚・下段３枚の写真を入れて、上下に並べて飾ります。</p></header>
 <main>
 <section class="preview" aria-label="写真フレームのプレビュー">
 <div class="sheet"><p class="sheet-label">上段 · 写真1枚とお祝いメッセージ</p><canvas id="card0" width="1051" height="750" aria-label="上段の写真フレーム。写真枠をタップして選択できます。"></canvas></div>
 <div class="sheet"><p class="sheet-label">下段 · 写真3枚</p><canvas id="card1" width="1051" height="750" aria-label="下段の写真フレーム。写真枠をタップして選択できます。"></canvas></div>
 </section>
 <aside aria-label="編集">
-<label for="design">デザインを選ぶ</label><select id="design"><option value="square-strong">四角・濃い枠</option><option value="square-soft" selected>四角・薄い枠</option><option value="round-strong">丸・濃い枠</option><option value="round-soft">丸・薄い枠</option></select><p class="small">枠の形と濃さを選べます。写真は引き継がれます。</p><hr>
-<label for="msgPreset">お祝いの文句</label><select id="msgPreset"><option value="default">元のまま（笑顔あふれる毎日を）</option><option value="a">これからも穏やかに過ごせますように。</option><option value="b">これからもお元気で。一緒に過ごしましょう。</option></select><p class="small">1行目「敬老の日、おめでとうございます。」は絵の手書きのまま。2行目だけ差し替わります（手書き風・真ん中固定）。</p><p class="small" id="fontStatus">手書きフォント：確認中… <span style="opacity:.6">v2026-09-12j</span></p><span aria-hidden="true" style="font-family:KleeEmbed;position:absolute;left:-9999px;top:0">敬老</span><hr><label for="nameText">お名前（上段に手書き風で印刷）</label><input id="nameText" type="text" maxlength="20" placeholder="山田 花子 様"><label for="dateText">日付（上段の右上に小さく）</label><input id="dateText" type="text" maxlength="30" placeholder="2026年9月21日"><label for="facilityText">施設名（下段の一番下に小さく）</label><input id="facilityText" type="text" maxlength="30" placeholder="小規模多機能こまごめ"><label class="small" style="display:flex;gap:8px;align-items:center"><input id="facilityOnTop" type="checkbox">上段の右下にも施設名を入れる（上段1枚だけ渡す人用）</label><p class="small">空にすると印刷されません。</p>
+<label for="design">デザインを選ぶ</label><select id="design"><option value="round-soft" selected>丸・薄い枠</option><option value="round-strong">丸・濃い枠</option></select><p class="small">枠の形と濃さを選べます。写真は引き継がれます。</p><hr>
+<label for="msgPreset">お祝いの文句</label><select id="msgPreset"><option value="default">元のまま（笑顔あふれる毎日を）</option><option value="a">これからも穏やかに過ごせますように。</option><option value="b">これからもお元気で。一緒に過ごしましょう。</option></select><p class="small">1行目「敬老の日、おめでとうございます。」は絵の手書きのまま。2行目だけ差し替わります（手書き風・真ん中固定）。</p><p class="small" id="fontStatus">手書きフォント：確認中… <span style="opacity:.6">v2026-09-12k</span></p><span aria-hidden="true" style="font-family:KleeEmbed;position:absolute;left:-9999px;top:0">敬老</span><hr><label for="nameText">お名前（上段に手書き風で印刷）</label><input id="nameText" type="text" maxlength="20" placeholder="山田 花子 様"><label for="dateText">日付（上段の右上に小さく）</label><input id="dateText" type="text" maxlength="30" placeholder="2026年9月21日"><label for="facilityText">施設名（下段の一番下に小さく）</label><input id="facilityText" type="text" maxlength="30" placeholder="小規模多機能こまごめ"><label class="small" style="display:flex;gap:8px;align-items:center"><input id="facilityOnTop" type="checkbox">上段の右下にも施設名を入れる（上段1枚だけ渡す人用）</label><p class="small">空にすると印刷されません。</p>
 <hr><fieldset><legend>写真を入れる・調整する</legend><div class="photo-choices" id="choices"></div></fieldset>
 <p class="small" id="selection"></p><button id="choose" class="primary full">写真を選ぶ</button><input id="photoFile" type="file" accept="image/*" hidden>
 <div class="adjust">
@@ -44,7 +44,7 @@
 const W=2102,H=1500;
 let frames=[];
 const blank=()=>({src:'',zoom:1,x:0.5,y:0.5});
-let state={format:'keiro-2l-designs-v1',design:'square-soft',name:'',message:'敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。',msgX:0,msgY:0,msgFont:'klee',nameText:'',dateText:'2026年9月21日',facilityText:'小規模多機能こまごめ',facilityOnTop:false,photos:Array.from({length:4},blank)};
+let state={format:'keiro-2l-designs-v1',design:'round-soft',name:'',message:'敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。',msgX:0,msgY:0,msgFont:'klee',nameText:'',dateText:'2026年9月21日',facilityText:'小規模多機能こまごめ',facilityOnTop:false,photos:Array.from({length:4},blank)};
 let pictures=Array(4).fill(null),selected=0,dirty=false,busy=false,exportURL='';
 let backgroundArt=null;
 let pickerIndex=0,drawRequest=0,pendingPages=new Set();
@@ -141,7 +141,7 @@ $('choose').onclick=()=>openPhotoPicker();
 $('photoFile').onchange=async e=>{const file=e.target.files[0],index=pickerIndex;try{if(file)await importPhoto(file,index);}finally{e.target.value='';}};
 for(const [id,key] of [['zoom','zoom'],['panX','x'],['panY','y']])$(id).oninput=e=>{if(busy)return;state.photos[selected][key]=Number(e.target.value);dirty=true;queueDraw(frames[selected].page);};
 /* 手書きフォント（Klee One 埋め込み）を明示的に読み込み、結果を画面に出す（iPadで効かない時の切り分け用・2026-09-12） */
-(function(){const el=$('fontStatus');const ok=(msg,good)=>{if(el){el.textContent=msg+' ';const v=document.createElement('span');v.style.opacity='.6';v.textContent='v2026-09-12j';el.appendChild(v);el.style.color=good?'#3a6b3a':'#a33';}};document.fonts.load('20px "KleeEmbed"').then(faces=>{const good=faces.length>0&&document.fonts.check('20px "KleeEmbed"');ok(good?'手書きフォント：読み込みOK':'手書きフォント：読み込めませんでした（標準の書体で表示）',good);queueDraw(0);}).catch(e=>{ok('手書きフォント：エラー '+(e&&e.message||e),false);queueDraw(0);});document.fonts.ready.then(()=>queueDraw(0));})();
+(function(){const el=$('fontStatus');const ok=(msg,good)=>{if(el){el.textContent=msg+' ';const v=document.createElement('span');v.style.opacity='.6';v.textContent='v2026-09-12k';el.appendChild(v);el.style.color=good?'#3a6b3a':'#a33';}};document.fonts.load('20px "KleeEmbed"').then(faces=>{const good=faces.length>0&&document.fonts.check('20px "KleeEmbed"');ok(good?'手書きフォント：読み込みOK':'手書きフォント：読み込めませんでした（標準の書体で表示）',good);queueDraw(0);}).catch(e=>{ok('手書きフォント：エラー '+(e&&e.message||e),false);queueDraw(0);});document.fonts.ready.then(()=>queueDraw(0));})();
 $('center').onclick=()=>{if(busy)return;Object.assign(state.photos[selected],{zoom:1,x:.5,y:.5});dirty=true;select(selected);};
 const PRESETS={default:DEFAULT_MESSAGE,a:'敬老の日、おめでとうございます。\nこれからも穏やかに過ごせますように。',b:'敬老の日、おめでとうございます。\nこれからもお元気で。一緒に過ごしましょう。',c:'敬老の日、おめでとうございます。\nいつもありがとうございます。これからもよろしくお願いします。'};function presetKeyOf(msg){for(const k in PRESETS)if(PRESETS[k]===msg)return k;return 'default';}$('msgPreset').onchange=e=>{if(busy)return;state.message=PRESETS[e.target.value]||DEFAULT_MESSAGE;state.msgX=0;state.msgY=0;dirty=true;queueDraw(0);};
 $('workName').oninput=e=>{state.name=e.target.value;dirty=true;};
