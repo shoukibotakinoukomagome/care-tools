@@ -25,7 +25,7 @@
 </section>
 <aside aria-label="編集">
 <label for="design">デザインを選ぶ</label><select id="design"><option value="square-strong">四角・濃い枠</option><option value="square-soft" selected>四角・薄い枠</option><option value="round-strong">丸・濃い枠</option><option value="round-soft">丸・薄い枠</option></select><p class="small">枠の形と濃さを選べます。写真は引き継がれます。</p><hr>
-<label for="msgPreset">お祝いの文句</label><select id="msgPreset"><option value="default">元のまま（笑顔あふれる毎日を）</option><option value="a">これからも穏やかに過ごせますように。</option><option value="b">これからもお元気で。一緒に過ごしましょう。</option></select><p class="small">1行目「敬老の日、おめでとうございます。」は絵の手書きのまま。2行目だけ差し替わります（手書き風・真ん中固定）。</p><p class="small" id="fontStatus">手書きフォント：確認中… <span style="opacity:.6">v2026-09-12b</span></p><span aria-hidden="true" style="font-family:KleeEmbed;position:absolute;left:-9999px;top:0">敬老</span><hr><label for="dateText">日付（上段の右上に小さく）</label><input id="dateText" type="text" maxlength="30" placeholder="2026年9月21日"><label for="facilityText">施設名（下段の一番下に小さく）</label><input id="facilityText" type="text" maxlength="30" placeholder="小規模多機能こまごめ"><p class="small">空にすると印刷されません。</p>
+<label for="msgPreset">お祝いの文句</label><select id="msgPreset"><option value="default">元のまま（笑顔あふれる毎日を）</option><option value="a">これからも穏やかに過ごせますように。</option><option value="b">これからもお元気で。一緒に過ごしましょう。</option></select><p class="small">1行目「敬老の日、おめでとうございます。」は絵の手書きのまま。2行目だけ差し替わります（手書き風・真ん中固定）。</p><p class="small" id="fontStatus">手書きフォント：確認中… <span style="opacity:.6">v2026-09-12</span></p><span aria-hidden="true" style="font-family:KleeEmbed;position:absolute;left:-9999px;top:0">敬老</span>
 <hr><fieldset><legend>写真を入れる・調整する</legend><div class="photo-choices" id="choices"></div></fieldset>
 <p class="small" id="selection"></p><button id="choose" class="primary full">写真を選ぶ</button><input id="photoFile" type="file" accept="image/*" hidden>
 <div class="adjust">
@@ -44,7 +44,7 @@
 const W=2102,H=1500;
 let frames=[];
 const blank=()=>({src:'',zoom:1,x:0.5,y:0.5});
-let state={format:'keiro-2l-designs-v1',design:'square-soft',name:'',message:'敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。',msgX:0,msgY:0,msgFont:'klee',dateText:'2026年9月21日',facilityText:'小規模多機能こまごめ',photos:Array.from({length:4},blank)};
+let state={format:'keiro-2l-designs-v1',design:'square-soft',name:'',message:'敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。',msgX:0,msgY:0,msgFont:'klee',photos:Array.from({length:4},blank)};
 let pictures=Array(4).fill(null),selected=0,dirty=false,busy=false,exportURL='';
 let backgroundArt=null;
 let pickerIndex=0,drawRequest=0,pendingPages=new Set();
@@ -67,7 +67,6 @@ function fontSpec(){return FONTS.klee;}/* 2026-09-12 まさみ：書体は手書
 function wrapText(ctx,text,maxWidth){const lines=[];for(const paragraph of text.split('\n')){let line='';for(const ch of paragraph){if(line&&ctx.measureText(line+ch).width>maxWidth){lines.push(line);line=ch}else line+=ch}lines.push(line)}return lines;}
 
 const DEFAULT_MESSAGE='敬老の日、おめでとうございます。\nこれからも笑顔あふれる毎日を。';
-const DEFAULT_DATE='2026年9月21日',DEFAULT_FACILITY='小規模多機能こまごめ';/* 2026-09-12 まさみ「1番下に社名小さく・上のどこかに日付小さく」 */
 let PAGE_CROPS=[];
 function framePath(c,f){c.beginPath();f.poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();}
 function insideFrame(f,x,y){let inside=false;const p=f.poly;for(let i=0,j=p.length-1;i<p.length;j=i++){if(((p[i][1]>y)!==(p[j][1]>y))&&(x<(p[j][0]-p[i][0])*(y-p[i][1])/(p[j][1]-p[i][1])+p[i][0]))inside=!inside;}return inside;}
@@ -82,8 +81,6 @@ function renderCard(canvas,page,editing=true){
  });
  // Original lettering stays intact until the user changes the message.
  if(page===0&&state.message!==DEFAULT_MESSAGE){c.fillStyle='#745021';c.strokeStyle='#745021';c.lineJoin='round';c.lineCap='round';c.textAlign='center';c.textBaseline='middle';let size=5.4,lines=[];/* 字体＝絵の手描き文字に近い丸ゴシックの標準の太さ（太字＋太い縁取りは「潰れる」・細いゴシックは「細い」と却下・2026-09-11） */const paras=state.message.trim().split('\n').filter(s=>s.trim()).slice(0,2);/* まず「1行目・2行目をそれぞれ1行に収める」大きさを探す（「に。」だけが次の行に落ちるのを防ぐ） */do{c.font=fontSpec().weight+size+'px '+fontSpec().family;if(paras.every(p=>c.measureText(p.trim()).width<=100))break;size-=.1;}while(size>3.2);lines=paras.every(p=>c.measureText(p.trim()).width<=100)?paras.map(p=>p.trim()):null;if(!lines){size=5.4;do{c.font=fontSpec().weight+size+'px '+fontSpec().family;lines=wrapText(c,state.message.trim(),100);if(lines.length<=2)break;size-=.15;}while(size>2);}const mx=89+(Number(state.msgX)||0),my=Number(state.msgY)||0;/* 文字の位置はスライダーで動かせる（mm） */c.lineWidth=size*fontSpec().stroke;/* 書体ごとにほんの少しだけ太らせる（縁取りが目立たない程度） */(lines.length===2?[lines[1]]:lines).forEach((line,k)=>{const i=lines.length===2?1:k;/* 1行目は絵の手書きを残し、2行目だけ描く（2026-09-12 まさみ） */const y=(lines.length===1?114.7:110.8+i*7.8)+my;if(c.lineWidth>0)c.strokeText(line,mx,y,86);c.fillText(line,mx,y,86);});}
- /* 日付（上段の右上）と施設名（下段の一番下・中央）を小さく手書き風で。2026-09-12 まさみ */
- {const cap=page===0?String(state.dateText??'').trim():String(state.facilityText??'').trim();if(cap){c.save();c.fillStyle='#745021';c.strokeStyle='#745021';c.lineJoin='round';c.lineCap='round';const sz=3.2;c.font=fontSpec().weight+sz+'px '+fontSpec().family;c.lineWidth=sz*fontSpec().stroke*0.6;c.textBaseline='middle';if(page===0){c.textAlign='right';/* 右上の虹の帯を避けて雲の隙間へ（検品 2026-09-12） */if(c.lineWidth>0)c.strokeText(cap,154,6.5,60);c.fillText(cap,154,6.5,60);}else{c.textAlign='center';/* フチなし印刷の切れ代を避けて下端から6mm */if(c.lineWidth>0)c.strokeText(cap,89,121,120);c.fillText(cap,89,121,120);}c.restore();}}
  c.restore();return canvas;
 }
 /* 文字を差し替える時：絵に描き込まれた元の文字（こげ茶の線）だけを消し、周りの色（空・パステルの輪）でつなぐ。白い四角で塗ると帯が白く抜けるため。デザインごとに1回だけ計算してキャッシュ */
@@ -92,7 +89,7 @@ function cleanedArt(){const key=state.design;if(cleanArtCache[key])return cleanA
 function draw(){if(!backgroundArt)return;renderCard($('card0'),0);renderCard($('card1'),1);}
 function notify(t){$('status').textContent=t;}
 function select(i){if(!Number.isInteger(i)||i<0||i>3)return;selected=i;const p=state.photos[i];$('selection').textContent=(i<1?'上段':'下段')+'・写真'+(i+1);$('zoom').value=p.zoom;$('panX').value=p.x;$('panY').value=p.y;['zoom','panX','panY','center'].forEach(id=>$(id).disabled=busy||!pictures[i]);[...$('choices').children].forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)));draw();}
-function setBusy(v){busy=v;['design','msgPreset','dateText','facilityText','choose','loadWork','saveWork','next','save0','save1','print','photoFile'].forEach(id=>$(id).disabled=v);[...$('choices').children].forEach(b=>b.disabled=v);['zoom','panX','panY','center'].forEach(id=>$(id).disabled=v||!pictures[selected]);$('choose').textContent=v?'読み込み中…':'写真を選ぶ';}
+function setBusy(v){busy=v;['design','msgPreset','choose','loadWork','saveWork','next','save0','save1','print','photoFile'].forEach(id=>$(id).disabled=v);[...$('choices').children].forEach(b=>b.disabled=v);['zoom','panX','panY','center'].forEach(id=>$(id).disabled=v||!pictures[selected]);$('choose').textContent=v?'読み込み中…':'写真を選ぶ';}
 function queueDraw(page){pendingPages.add(page);if(drawRequest)return;drawRequest=requestAnimationFrame(()=>{drawRequest=0;const pages=[...pendingPages];pendingPages.clear();if(backgroundArt)pages.forEach(p=>renderCard($('card'+p),p));});}
 function openPhotoPicker(index=selected){if(busy)return;pickerIndex=index;select(index);$('photoFile').click();}
 function nextEmptyAfter(index){for(let offset=1;offset<=pictures.length;offset++){const i=(index+offset)%pictures.length;if(!pictures[i])return i;}return index;}
@@ -136,18 +133,16 @@ $('choose').onclick=()=>openPhotoPicker();
 $('photoFile').onchange=async e=>{const file=e.target.files[0],index=pickerIndex;try{if(file)await importPhoto(file,index);}finally{e.target.value='';}};
 for(const [id,key] of [['zoom','zoom'],['panX','x'],['panY','y']])$(id).oninput=e=>{if(busy)return;state.photos[selected][key]=Number(e.target.value);dirty=true;queueDraw(frames[selected].page);};
 /* 手書きフォント（Klee One 埋め込み）を明示的に読み込み、結果を画面に出す（iPadで効かない時の切り分け用・2026-09-12） */
-(function(){const el=$('fontStatus');const ok=(msg,good)=>{if(el){el.textContent=msg+' ';const v=document.createElement('span');v.style.opacity='.6';v.textContent='v2026-09-12b';el.appendChild(v);el.style.color=good?'#3a6b3a':'#a33';}};document.fonts.load('20px "KleeEmbed"').then(faces=>{const good=faces.length>0&&document.fonts.check('20px "KleeEmbed"');ok(good?'手書きフォント：読み込みOK':'手書きフォント：読み込めませんでした（標準の書体で表示）',good);queueDraw(0);}).catch(e=>{ok('手書きフォント：エラー '+(e&&e.message||e),false);queueDraw(0);});document.fonts.ready.then(()=>queueDraw(0));})();
+(function(){const el=$('fontStatus');const ok=(msg,good)=>{if(el){el.textContent=msg+' ';const v=document.createElement('span');v.style.opacity='.6';v.textContent='v2026-09-12';el.appendChild(v);el.style.color=good?'#3a6b3a':'#a33';}};document.fonts.load('20px "KleeEmbed"').then(faces=>{const good=faces.length>0&&document.fonts.check('20px "KleeEmbed"');ok(good?'手書きフォント：読み込みOK':'手書きフォント：読み込めませんでした（標準の書体で表示）',good);queueDraw(0);}).catch(e=>{ok('手書きフォント：エラー '+(e&&e.message||e),false);queueDraw(0);});document.fonts.ready.then(()=>queueDraw(0));})();
 $('center').onclick=()=>{if(busy)return;Object.assign(state.photos[selected],{zoom:1,x:.5,y:.5});dirty=true;select(selected);};
 const PRESETS={default:DEFAULT_MESSAGE,a:'敬老の日、おめでとうございます。\nこれからも穏やかに過ごせますように。',b:'敬老の日、おめでとうございます。\nこれからもお元気で。一緒に過ごしましょう。',c:'敬老の日、おめでとうございます。\nいつもありがとうございます。これからもよろしくお願いします。'};function presetKeyOf(msg){for(const k in PRESETS)if(PRESETS[k]===msg)return k;return 'default';}$('msgPreset').onchange=e=>{if(busy)return;state.message=PRESETS[e.target.value]||DEFAULT_MESSAGE;state.msgX=0;state.msgY=0;dirty=true;queueDraw(0);};
 $('workName').oninput=e=>{state.name=e.target.value;dirty=true;};
-$('dateText').oninput=e=>{state.dateText=e.target.value;dirty=true;queueDraw(0);};
-$('facilityText').oninput=e=>{state.facilityText=e.target.value;dirty=true;queueDraw(1);};
 $('save0').onclick=()=>saveImage(0);$('save1').onclick=()=>saveImage(1);$('closeDialog').onclick=()=>{$('exportDialog').close();$('exportImage').removeAttribute('src');$('imageLink').removeAttribute('href');};
 $('saveWork').onclick=()=>{download(new Blob([JSON.stringify(state)],{type:'application/json'}),filename('編集データ.json'));dirty=false;notify('保存先で編集データを確認してください。');};
 $('loadWork').onclick=()=>{if(!dirty||confirm('現在の編集内容を置き換えます。必要な内容は保存しましたか？'))$('workFile').click();};
 function validateWork(s){if(s&&s.design!==undefined&&!Object.prototype.hasOwnProperty.call(DESIGNS,s.design))throw new Error('デザインの情報を読み込めませんでした。');if(!s||!['keiro-2l-four-v1','keiro-2l-designs-v1'].includes(s.format)||typeof s.name!=='string'||s.name.length>60||typeof s.message!=='string'||s.message.length>80||s.message.split('\n').length>2||!Array.isArray(s.photos)||s.photos.length!==4)throw new Error('このフレームの編集データを選んでください。');for(const p of s.photos){if(!p||typeof p.src!=='string'||(p.src&&!/^data:image\/(jpeg|png|webp);base64,/.test(p.src))||!Number.isFinite(p.zoom)||p.zoom<1||p.zoom>3||!Number.isFinite(p.x)||p.x<0||p.x>1||!Number.isFinite(p.y)||p.y<0||p.y>1)throw new Error('編集データの写真情報を読み込めませんでした。');}return {...s,format:'keiro-2l-designs-v1',design:s.design||state.design,msgX:0,msgY:0,msgFont:'klee'/* 位置はセンター固定・書体は手書き風固定（2026-09-12） */};}
-$('workFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;setBusy(true);try{if(file.size>70*1024*1024)throw new Error('編集データが大きすぎます。');const s=validateWork(JSON.parse(await file.text()));const art=s.design===state.design?backgroundArt:await loadImage(DESIGNS[s.design].image);const imgs=[];for(const p of s.photos){imgs.push(p.src?await loadImage(p.src):null);}state=s;if(state.dateText===undefined)state.dateText=DEFAULT_DATE;if(state.facilityText===undefined)state.facilityText=DEFAULT_FACILITY;pictures=imgs;activateDesign(s.design,art);$('msgPreset').value=presetKeyOf(s.message);$('workName').value=s.name;$('dateText').value=state.dateText;$('facilityText').value=state.facilityText;dirty=false;select(0);notify('編集内容を読み込みました。')}catch(e){notify(e instanceof SyntaxError?'編集データを読み込めませんでした。':e.message)}finally{setBusy(false)}};
-$('next').onclick=()=>{if(!confirm('写真4枚と作業名を空にして、次の人を作ります。必要な写真・編集内容は保存しましたか？'))return;state={format:'keiro-2l-designs-v1',design:state.design,name:'',message:state.message,msgX:0,msgY:0,msgFont:'klee',dateText:state.dateText,facilityText:state.facilityText,photos:Array.from({length:4},blank)};pictures=Array(4).fill(null);$('workName').value='';dirty=false;select(0);notify('写真を入れ替えてください。メッセージは引き継いでいます。');};
+$('workFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;setBusy(true);try{if(file.size>70*1024*1024)throw new Error('編集データが大きすぎます。');const s=validateWork(JSON.parse(await file.text()));const art=s.design===state.design?backgroundArt:await loadImage(DESIGNS[s.design].image);const imgs=[];for(const p of s.photos){imgs.push(p.src?await loadImage(p.src):null);}state=s;pictures=imgs;activateDesign(s.design,art);$('msgPreset').value=presetKeyOf(s.message);$('workName').value=s.name;dirty=false;select(0);notify('編集内容を読み込みました。')}catch(e){notify(e instanceof SyntaxError?'編集データを読み込めませんでした。':e.message)}finally{setBusy(false)}};
+$('next').onclick=()=>{if(!confirm('写真4枚と作業名を空にして、次の人を作ります。必要な写真・編集内容は保存しましたか？'))return;state={format:'keiro-2l-designs-v1',design:state.design,name:'',message:state.message,msgX:0,msgY:0,msgFont:'klee',photos:Array.from({length:4},blank)};pictures=Array(4).fill(null);$('workName').value='';dirty=false;select(0);notify('写真を入れ替えてください。メッセージは引き継いでいます。');};
 $('print').onclick=()=>{if(pictures.some(p=>!p)){notify('写真4枚を入れてから印刷してください。');return}const area=$('printArea');area.replaceChildren();for(let i=0;i<2;i++){const im=new Image();const output=exportCanvas(i);im.src=output.toDataURL('image/jpeg',.98);output.width=1;output.height=1;area.appendChild(im);}Promise.all([...area.children].map(im=>im.decode())).then(()=>window.print()).catch(()=>notify('印刷用画像を準備できませんでした。もう一度お試しください。'));};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 
@@ -162,7 +157,7 @@ async function changeDesign(id){
  finally{setBusy(false);}
 }
 $('design').onchange=e=>changeDesign(e.target.value);
-$('msgPreset').value=presetKeyOf(state.message);$('dateText').value=state.dateText;$('facilityText').value=state.facilityText;
+$('msgPreset').value=presetKeyOf(state.message);
 setBusy(true);
 const artReady=loadImage(DESIGNS[state.design].image).then(im=>{activateDesign(state.design,im);setBusy(false);}).catch(()=>notify('イラストを読み込めませんでした。ページを開き直してください。'));
 </script></body></html>
