@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>敬老の日 卓上名札メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
+<style id="dynamic-page-size"></style>
+<style>
+  :root{
+    --brown: #8b5e34;
+    --brown-dark: #5f3f22;
+    --cream: #fbf6ee;
+    --line: #c9bfae;
+  }
+  *{ box-sizing: border-box; }
+  html, body{
+    margin:0; padding:0;
+    background: var(--cream);
+    font-family: 'Kiwi Maru', 'Hiragino Maru Gothic ProN', 'Yu Gothic', 'YuGothic', sans-serif;
+    color: #3a2b1a;
+  }
+
+  /* ---------- 画面上部の操作UI（印刷されない） ---------- */
+  .ui{
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px 16px 8px;
+  }
+  h1{
+    font-size: 20px;
+    margin: 4px 0 12px;
+    color: var(--brown-dark);
+  }
+  .howto{
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .howto p{ margin: 0; }
+
+  .block{
+    margin-bottom: 18px;
+  }
+  .block-label{
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--brown-dark);
+  }
+
+  .art-choices{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .art-btn{
+    width: 96px;
+    min-height: 96px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    overflow: hidden;
+  }
+  .art-btn span{
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.88);
+    font-size: 12px;
+    line-height: 1.3;
+    padding: 3px 4px;
+    text-align: center;
+  }
+  .art-btn.selected{
+    border-color: var(--brown);
+  }
+
+  .size-choices{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .size-btn{
+    min-height: 48px;
+    padding: 8px 16px;
+    font-size: 16px;
+    border-radius: 24px;
+    border: 2px solid var(--line);
+    background: #fff;
+    color: #3a2b1a;
+    cursor: pointer;
+  }
+  .size-btn.selected{
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff;
+  }
+
+  textarea{
+    width: 100%;
+    min-height: 120px;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  .count-info{
+    font-size: 13px;
+    color: #7a6a55;
+    margin-top: 6px;
+  }
+
+  .print-btn{
+    display: block;
+    width: 100%;
+    min-height: 52px;
+    font-size: 17px;
+    font-weight: 700;
+    background: var(--brown);
+    color: #fff;
+    border: none;
+    border-radius: 26px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .print-btn:active{ background: var(--brown-dark); }
+
+  /* ---------- ページ・名札プレビュー ---------- */
+  #pages-wrap{
+    overflow-x: auto;
+    padding: 8px 16px 40px;
+  }
+  #pages{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .page{
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    position: relative;
+    flex-shrink: 0;
+    display: grid;
+  }
+  /* 標準=大きめ：A4横 297x210mm、カード148x210mmを横に2枚 */
+  body.mode-standard .page{
+    width: 297mm;
+    height: 210mm;
+    grid-template-columns: 148mm 148mm;
+    grid-template-rows: 210mm;
+  }
+  body.mode-standard .card-slot{
+    width: 148mm;
+    height: 210mm;
+  }
+  /* 小さめ：A4縦 210x297mm、カード105x148mmを2x2 */
+  body.mode-compact .page{
+    width: 210mm;
+    height: 297mm;
+    grid-template-columns: 105mm 105mm;
+    grid-template-rows: 148mm 148mm;
+  }
+  body.mode-compact .card-slot{
+    width: 105mm;
+    height: 148mm;
+  }
+
+  .card-slot{
+    position: relative;
+    border: 0.35mm solid #999;
+    overflow: visible;
+    --panel-h: calc(var(--face-h));
+  }
+  body.mode-standard .card-slot{ --face-h: 105mm; }
+  body.mode-compact .card-slot{ --face-h: 74mm; }
+
+  .panel{
+    position: relative;
+    width: 100%;
+    height: var(--face-h);
+    overflow: hidden;
+  }
+  .panel.back{
+    transform: rotate(180deg);
+  }
+  .art-bg{
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+  }
+  .white-panel{
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 88%;
+    height: 62%;
+    background: rgba(255,255,255,0.92);
+    border-radius: calc(var(--face-h) * 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2% 4%;
+  }
+  .name{
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+    font-weight: 500;
+    color: #3a2b1a;
+    font-size: calc(var(--face-h) * 0.35);
+    line-height: 1.2;
+  }
+  .name.blank{
+    min-height: calc(var(--face-h) * 0.35);
+    border-bottom: 0.3mm dashed #bbb;
+  }
+  .subtitle{
+    display: block;
+    margin-top: calc(var(--face-h) * 0.04);
+    font-size: calc(var(--face-h) * 0.09);
+    color: #6b5a44;
+    white-space: nowrap;
+  }
+
+  /* 山折り線 */
+  .fold-line{
+    position: absolute;
+    left: 0; right: 0;
+    top: var(--face-h);
+    border-top: 0.3mm dashed #a99a83;
+    height: 0;
+  }
+  .fold-tag{
+    position: absolute;
+    left: 50%;
+    top: var(--face-h);
+    transform: translate(-50%, -50%);
+    background: var(--cream);
+    color: #8b7355;
+    font-size: 3mm;
+    padding: 0 2mm;
+    white-space: nowrap;
+  }
+
+  /* 切り取り印（角のはさみマーク） */
+  .cut-tag{
+    position: absolute;
+    top: -3mm;
+    left: -3mm;
+    font-size: 4mm;
+    color: #999;
+    background: var(--cream);
+    line-height: 1;
+    padding: 0.5mm;
+  }
+
+  .no-print{}
+
+  @media print{
+    body{ background: #fff; }
+    .no-print{ display: none !important; }
+    #pages-wrap{ overflow: visible; padding: 0; }
+    #pages{ gap: 0; }
+    .page{
+      box-shadow: none;
+      page-break-after: always;
+      margin: 0;
+    }
+    .page:last-child{ page-break-after: auto; }
+    *{
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color-adjust: exact;
+    }
+  }
+</style>
+</head>
+<body class="mode-standard">
+
+<div class="ui no-print">
+  <h1>敬老の日 卓上名札メーカー</h1>
+
+  <div class="howto">
+    <p>①名前を1行に1人分ずつ入力すると、その下に名札が自動で出てきます。<br>
+    ②絵柄は上の四角い写真3つから選べます。大きさは「大きめ」「小さめ」ボタンで切り替えられます。<br>
+    ③準備ができたら一番下の茶色いボタンを押して印刷し、点線を山折り、実線をはさみで切ってください。</p>
+  </div>
+
+  <div class="block">
+    <div class="block-label">絵柄を選ぶ</div>
+    <div class="art-choices">
+      <button type="button" class="art-btn selected" data-art="art1.png" style="background-image:url('art1.png')"><span>和風（鶴亀と吉祥文様）</span></button>
+      <button type="button" class="art-btn" data-art="art2.png" style="background-image:url('art2.png')"><span>綺麗（鶴と秋景色）</span></button>
+      <button type="button" class="art-btn" data-art="art3.png" style="background-image:url('art3.png')"><span>かわいい（鶴亀と紅葉）</span></button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-label">名札の大きさ</div>
+    <div class="size-choices">
+      <button type="button" class="size-btn selected" data-mode="standard">大きめ（1枚に2人分）</button>
+      <button type="button" class="size-btn" data-mode="compact">小さめ（1枚に4人分）</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-label">名前（1行に1人ずつ）</div>
+    <textarea id="names-input" placeholder="山田 太郎さま&#10;鈴木 花子さま"></textarea>
+    <div class="count-info" id="count-info">0人分・1枚</div>
+  </div>
+
+  <button type="button" class="print-btn" id="print-btn">印刷する</button>
+</div>
+
+<div id="pages-wrap">
+  <div id="pages"></div>
+</div>
+
+<script>
+(function(){
+  var state = {
+    mode: 'standard',   // 'standard' = 大きめ2人/枚, 'compact' = 小さめ4人/枚
+    art: 'art1.png'
+  };
+
+  var PER_PAGE = { standard: 2, compact: 4 };
+
+  var namesInput = document.getElementById('names-input');
+  var pagesEl = document.getElementById('pages');
+  var countInfo = document.getElementById('count-info');
+  var dynStyle = document.getElementById('dynamic-page-size');
+
+  function updatePageSizeStyle(){
+    if(state.mode === 'standard'){
+      dynStyle.textContent = '@page{ size: 297mm 210mm; margin: 0; }';
+    } else {
+      dynStyle.textContent = '@page{ size: 210mm 297mm; margin: 0; }';
+    }
+  }
+
+  function getNames(){
+    var raw = namesInput.value.split('\n');
+    var names = [];
+    for(var i=0;i<raw.length;i++){
+      var t = raw[i].trim();
+      if(t.length > 0) names.push(t);
+    }
+    return names;
+  }
+
+  function buildCardSlot(name, art){
+    var slot = document.createElement('div');
+    slot.className = 'card-slot';
+
+    var cutTag = document.createElement('div');
+    cutTag.className = 'cut-tag no-print-mark';
+    cutTag.textContent = '✂';
+    slot.appendChild(cutTag);
+
+    var front = buildPanel(name, art, false);
+    var foldLine = document.createElement('div');
+    foldLine.className = 'fold-line';
+    var foldTag = document.createElement('div');
+    foldTag.className = 'fold-tag';
+    foldTag.textContent = '- - - 山折り - - -';
+    var back = buildPanel(name, art, true);
+
+    slot.appendChild(front);
+    slot.appendChild(foldLine);
+    slot.appendChild(foldTag);
+    slot.appendChild(back);
+    return slot;
+  }
+
+  function buildPanel(name, art, isBack){
+    var panel = document.createElement('div');
+    panel.className = 'panel' + (isBack ? ' back' : '');
+
+    var bg = document.createElement('div');
+    bg.className = 'art-bg';
+    bg.style.backgroundImage = "url('" + art + "')";
+    panel.appendChild(bg);
+
+    var white = document.createElement('div');
+    white.className = 'white-panel';
+
+    var nameEl = document.createElement('span');
+    nameEl.className = 'name' + (name ? '' : ' blank');
+    nameEl.textContent = name || '';
+    white.appendChild(nameEl);
+
+    var sub = document.createElement('span');
+    sub.className = 'subtitle';
+    sub.textContent = '敬老の日おめでとうございます';
+    white.appendChild(sub);
+
+    panel.appendChild(white);
+    return panel;
+  }
+
+  function fitNameText(nameEl){
+    if(!nameEl.textContent) return;
+    // フォントサイズはCSSのcalc(var(--face-h)*0.35)で初期設定済み。
+    // ここでは実測して入りきらない場合だけ縮小する。
+    var minPx = 10; // 最低サイズ(px)。これ以下にはしない
+    var guard = 0;
+    var style = window.getComputedStyle(nameEl);
+    var sizePx = parseFloat(style.fontSize);
+    while(nameEl.scrollWidth > nameEl.clientWidth && sizePx > minPx && guard < 80){
+      sizePx -= 1;
+      nameEl.style.fontSize = sizePx + 'px';
+      guard++;
+    }
+  }
+
+  function render(){
+    updatePageSizeStyle();
+    document.body.className = 'mode-' + state.mode;
+
+    var names = getNames();
+    var perPage = PER_PAGE[state.mode];
+
+    var slots; // 各カードに入れる名前の配列（空文字=手書き用）
+    if(names.length === 0){
+      slots = [];
+      for(var i=0;i<perPage;i++) slots.push('');
+    } else {
+      slots = names.slice();
+      var remainder = slots.length % perPage;
+      if(remainder !== 0){
+        var pad = perPage - remainder;
+        for(var j=0;j<pad;j++) slots.push('');
+      }
+    }
+
+    var pageCount = Math.max(1, Math.ceil(slots.length / perPage));
+
+    pagesEl.innerHTML = '';
+    for(var p=0; p<pageCount; p++){
+      var pageEl = document.createElement('div');
+      pageEl.className = 'page';
+      for(var s=0; s<perPage; s++){
+        var idx = p*perPage + s;
+        var nm = slots[idx] || '';
+        var cardSlot = buildCardSlot(nm, state.art);
+        pageEl.appendChild(cardSlot);
+      }
+      pagesEl.appendChild(pageEl);
+    }
+
+    // レイアウト確定後にフォント自動縮小（要素がDOMに乗ってから）
+    requestAnimationFrame(function(){
+      var nameEls = document.querySelectorAll('.name:not(.blank)');
+      nameEls.forEach(function(el){ fitNameText(el); });
+    });
+
+    var peopleCount = names.length;
+    countInfo.textContent = peopleCount + '人分・' + pageCount + '枚';
+  }
+
+  // --- イベント ---
+  document.querySelectorAll('.art-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.art-btn').forEach(function(b){ b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      state.art = btn.getAttribute('data-art');
+      render();
+    });
+  });
+
+  document.querySelectorAll('.size-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.size-btn').forEach(function(b){ b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      state.mode = btn.getAttribute('data-mode');
+      render();
+    });
+  });
+
+  var debounceTimer = null;
+  namesInput.addEventListener('input', function(){
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(render, 250);
+  });
+
+  document.getElementById('print-btn').addEventListener('click', function(){
+    window.print();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
