@@ -208,9 +208,9 @@
     position: absolute;
     left: 50%; top: 50%;
     transform: translate(-50%, -50%);
-    width: 88%;
-    height: 62%;
-    background: rgba(255,255,255,0.92);
+    width: 90%;
+    height: 78%;
+    background: rgba(255,253,247,0.93);
     border-radius: calc(var(--face-h) * 0.06);
     display: flex;
     flex-direction: column;
@@ -218,26 +218,49 @@
     justify-content: center;
     padding: 2% 4%;
   }
+  .kotobuki{
+    display: block;
+    font-size: calc(var(--face-h) * 0.085);
+    color: #a34d2c;
+    letter-spacing: 0.35em;
+    white-space: nowrap;
+    margin-bottom: calc(var(--face-h) * 0.03);
+  }
+  .name-row{
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
+  }
   .name{
     display: block;
-    width: 100%;
     white-space: nowrap;
-    overflow: hidden;
     text-align: center;
     font-weight: 500;
-    color: #3a2b1a;
-    font-size: calc(var(--face-h) * 0.35);
-    line-height: 1.2;
+    color: #2e2318;
+    font-size: calc(var(--face-h) * 0.30);
+    line-height: 1.15;
   }
   .name.blank{
-    min-height: calc(var(--face-h) * 0.35);
+    min-width: calc(var(--face-h) * 1.4);
+    min-height: calc(var(--face-h) * 0.30);
     border-bottom: 0.3mm dashed #bbb;
   }
-  .subtitle{
+  .keisho{
     display: block;
-    margin-top: calc(var(--face-h) * 0.04);
-    font-size: calc(var(--face-h) * 0.09);
-    color: #6b5a44;
+    font-size: calc(var(--face-h) * 0.12);
+    color: #2e2318;
+    margin-left: calc(var(--face-h) * 0.04);
+    padding-bottom: calc(var(--face-h) * 0.035);
+    white-space: nowrap;
+  }
+  .facility{
+    display: block;
+    margin-top: calc(var(--face-h) * 0.045);
+    font-size: calc(var(--face-h) * 0.058);
+    color: #8b7355;
+    letter-spacing: 0.15em;
     white-space: nowrap;
   }
 
@@ -300,7 +323,7 @@
   <h1>敬老の日 卓上名札メーカー</h1>
 
   <div class="howto">
-    <p>①名前を1行に1人分ずつ入力すると、その下に名札が自動で出てきます。<br>
+    <p>①名前を1行に1人分ずつ入力すると、その下に名札が自動で出てきます。「様」は自動で付きます。<br>
     ②絵柄は上の四角い写真3つから選べます。大きさは「大きめ」「小さめ」ボタンで切り替えられます。<br>
     ③準備ができたら一番下の茶色いボタンを押して印刷し、点線を山折り、実線をはさみで切ってください。</p>
   </div>
@@ -324,7 +347,7 @@
 
   <div class="block">
     <div class="block-label">名前（1行に1人ずつ）</div>
-    <textarea id="names-input" placeholder="山田 太郎さま&#10;鈴木 花子さま"></textarea>
+    <textarea id="names-input" placeholder="山田 太郎&#10;鈴木 花子&#10;（「様」は自動で付きます）"></textarea>
     <div class="count-info" id="count-info">0人分・1枚</div>
   </div>
 
@@ -403,29 +426,46 @@
     var white = document.createElement('div');
     white.className = 'white-panel';
 
-    var nameEl = document.createElement('span');
-    nameEl.className = 'name' + (name ? '' : ' blank');
-    nameEl.textContent = name || '';
-    white.appendChild(nameEl);
+    var koto = document.createElement('span');
+    koto.className = 'kotobuki';
+    koto.textContent = '祝 敬老の日';
+    white.appendChild(koto);
 
-    var sub = document.createElement('span');
-    sub.className = 'subtitle';
-    sub.textContent = '敬老の日おめでとうございます';
-    white.appendChild(sub);
+    // 末尾の敬称（様・さま・殿）は分離して小さく表示。無ければ「様」を付ける
+    var base = name, keisho = '様';
+    var m = name ? name.match(/^(.*?)[ 　]*(様|さま|殿)$/) : null;
+    if(m){ base = m[1]; keisho = m[2]; }
+
+    var row = document.createElement('div');
+    row.className = 'name-row';
+    var nameEl = document.createElement('span');
+    nameEl.className = 'name' + (base ? '' : ' blank');
+    nameEl.textContent = base || '';
+    row.appendChild(nameEl);
+    var keishoEl = document.createElement('span');
+    keishoEl.className = 'keisho';
+    keishoEl.textContent = keisho;
+    row.appendChild(keishoEl);
+    white.appendChild(row);
+
+    var fac = document.createElement('span');
+    fac.className = 'facility';
+    fac.textContent = '小規模多機能こまごめ';
+    white.appendChild(fac);
 
     panel.appendChild(white);
     return panel;
   }
 
-  function fitNameText(nameEl){
-    if(!nameEl.textContent) return;
-    // フォントサイズはCSSのcalc(var(--face-h)*0.35)で初期設定済み。
-    // ここでは実測して入りきらない場合だけ縮小する。
+  function fitNameText(rowEl){
+    var nameEl = rowEl.querySelector('.name');
+    if(!nameEl || !nameEl.textContent) return;
+    // フォントサイズはCSSで初期設定済み。行（名前+敬称）が入りきらない場合だけ名前を縮小する。
     var minPx = 10; // 最低サイズ(px)。これ以下にはしない
     var guard = 0;
     var style = window.getComputedStyle(nameEl);
     var sizePx = parseFloat(style.fontSize);
-    while(nameEl.scrollWidth > nameEl.clientWidth && sizePx > minPx && guard < 80){
+    while(rowEl.scrollWidth > rowEl.clientWidth && sizePx > minPx && guard < 120){
       sizePx -= 1;
       nameEl.style.fontSize = sizePx + 'px';
       guard++;
@@ -469,8 +509,8 @@
 
     // レイアウト確定後にフォント自動縮小（要素がDOMに乗ってから）
     requestAnimationFrame(function(){
-      var nameEls = document.querySelectorAll('.name:not(.blank)');
-      nameEls.forEach(function(el){ fitNameText(el); });
+      var rows = document.querySelectorAll('.name-row');
+      rows.forEach(function(el){ fitNameText(el); });
     });
 
     var peopleCount = names.length;
