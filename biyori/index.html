@@ -493,7 +493,7 @@ $('fsreset').onclick = () => { if (!fsTarget) return; delete state.sizes[fsTarge
 applySizes();
 
 /* ---------- 見出しをタップすると、よく使う名前から選べる（自由に打つこともできる） ---------- */
-const CATS = ['季節のひとこま', 'イベント', '食事作り', 'おやつ作り', 'レクリエーション', '誕生日会', 'お出かけ', '体操', '手作り作品', '流しそうめん', '敬老会', 'クリスマス会', '日々の様子'];
+const CATS = ['季節のひとこま', 'イベント', '食事作り', 'おやつ作り', 'レクリエーション', '誕生日会', 'お出かけ', '体操', '運動療法', '音楽療法', '手作り作品', '流しそうめん', '敬老会', 'クリスマス会', '日々の様子'];
 const catMenu = document.createElement('div'); catMenu.id = 'catmenu'; catMenu.hidden = true;
 CATS.forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.textContent = c; b.dataset.cat = c; catMenu.append(b); });
 const note = document.createElement('span'); note.textContent = 'そのまま文字を打っても変えられます'; catMenu.append(note);
