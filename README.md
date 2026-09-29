@@ -15,5 +15,5 @@ https://shoukibotakinoukomagome.github.io/care-tools/album16/
 https://shoukibotakinoukomagome.github.io/care-tools/album20/
 
 ## biyori/
-こまごめ日和（広報紙・A4表裏）の編集ページ。年と月を選ぶと見出し・色・飾りが切り替わる。写真枠は縦長中心（大きい枠だけ横長）。号ごとに端末内に保存。iPadはホーム画面に追加して使う（「PDFをつくる」→「保存・印刷する」で共有シート）。サーバーには何も送らない。
+こまごめ日和（広報紙・A4表裏）の編集ページ。年と月を選ぶと見出し・色・飾りが切り替わる。写真枠は縦長中心で、小さい横長を少しまぜた（大きい枠は横長）。号ごとに端末内に保存。iPadはホーム画面に追加して使う（「PDFをつくる」→「保存・印刷する」で共有シート）。サーバーには何も送らない。
 https://shoukibotakinoukomagome.github.io/care-tools/biyori/
