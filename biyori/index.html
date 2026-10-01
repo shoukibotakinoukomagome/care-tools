@@ -163,9 +163,8 @@ body.swapmode .slot{opacity:.55}
     <button id="clear" disabled>写真を外す</button>
     <label>大きさ <input id="zoom" type="range" min="1" max="3" step="0.01" value="1" disabled></label>
     <button id="reset" disabled>位置を中央に</button>
-    <button id="eraser" disabled aria-pressed="false">消しゴム</button>
-    <label>太さ <select id="esize" disabled><option value="7">細い</option><option value="12" selected>ふつう</option><option value="20">太い</option></select></label>
-    <button id="eundo" disabled>消しゴムを1回戻す</button>
+    <button id="eraser" disabled aria-pressed="false">ぼかす</button>
+    <button id="eundo" disabled>ぼかしを1回戻す</button>
     <button id="save">保存ファイルを書き出す</button>
     <button id="load">保存ファイルを読み込む</button>
     <button id="pdf" class="primary">PDFをつくる（A4表裏）</button>
@@ -178,7 +177,7 @@ body.swapmode .slot{opacity:.55}
     <span id="check">重なりチェック中…</span>
     <span id="status">写真枠をタップしてください</span>
   </div>
-  <p class="note">空いている枠をタップ → 写真を選ぶと入ります。位置を直すときは、写真を1回タップして選んでから指（マウス）でずらし、2本指で広げる（または「大きさ」）と拡大。名前などが写っていたら「消しゴム」でなぞると消えます。文字はタップして直せます。途中の状態はこの端末に自動で残ります。別の端末に移すときは「保存ファイルを書き出す」→「読み込む」。印刷は「PDFをつくる」で出たPDFを印刷してください。</p>
+  <p class="note">空いている枠をタップ → 写真を選ぶと入ります。位置を直すときは、写真を1回タップして選んでから指（マウス）でずらし、2本指で広げる（または「大きさ」）と拡大。名前などが写っていたら「ぼかす」を押して、その所を指で四角に囲むとぼけます。文字はタップして直せます。途中の状態はこの端末に自動で残ります。別の端末に移すときは「保存ファイルを書き出す」→「読み込む」。印刷は「PDFをつくる」で出たPDFを印刷してください。</p>
 </div>
 <main class="pages">
   <section class="pagebox"><p class="pagename">表</p><div class="paper" id="p0"></div></section>
@@ -317,7 +316,7 @@ for (const s of SLOTS){
     const sc = Math.max(b.width / v.w, b.height / v.h) * v.z;
     return {x: (x - b.left + (v.w * sc - b.width) * v.px / 100) / sc,
       y: (y - b.top + (v.h * sc - b.height) * v.py / 100) / sc,
-      r: +$('esize').value / (window.visualViewport?.scale || 1) / sc};
+      r: 0};
   };
   const clearStroke = () => { stroke?.canvas.remove(); stroke = null; };
   s.clearStroke = () => { if (stroke) s.moved = false; clearStroke(); hadPinch = true; };
@@ -333,11 +332,12 @@ for (const s of SLOTS){
     const point = imagePoint(e.clientX, e.clientY, v, b);
     const x = e.clientX - b.left, y = e.clientY - b.top;
     const ctx = stroke.ctx;
-    ctx.lineWidth = 2 * +$('esize').value / (window.visualViewport?.scale || 1);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(255,70,120,.45)';
-    if (stroke.points.length){ ctx.beginPath(); ctx.moveTo(stroke.lastX, stroke.lastY); ctx.lineTo(x, y); ctx.stroke(); }
-    else { ctx.beginPath(); ctx.arc(x, y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); }
-    stroke.points.push(point); stroke.lastX = x; stroke.lastY = y;
+    if (!stroke.points.length){ stroke.x0 = x; stroke.y0 = y; }
+    // 指を置いた所から今の所までの四角を見せる（ここがぼける）
+    ctx.clearRect(0, 0, b.width, b.height);
+    ctx.fillStyle = 'rgba(255,70,120,.18)'; ctx.strokeStyle = 'rgba(255,70,120,.9)'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.fillRect(stroke.x0, stroke.y0, x - stroke.x0, y - stroke.y0); ctx.strokeRect(stroke.x0, stroke.y0, x - stroke.x0, y - stroke.y0);
+    stroke.points.push(point);
   };
   el.addEventListener('pointerdown', e => {
     if (e.pointerType !== 'mouse' && active !== s) return;
@@ -375,10 +375,10 @@ for (const s of SLOTS){
     if (!pointers.has(e.pointerId)) return;
     const points = stroke && pointers.size === 1 && !cancelled && !hadPinch ? stroke.points : null;
     const photo = stroke?.photo, overlay = points ? stroke.canvas : null;
-    if (overlay){ overlay.classList.add('pending'); stroke = null; } else clearStroke();   // なぞった線は消し終わるまで見せておく
+    if (overlay){ overlay.classList.add('pending'); stroke = null; } else clearStroke();   // 囲んだ四角はぼかし終わるまで見せておく
     pointers.delete(e.pointerId);
     if (points?.length){
-      s.moved = true; statusEl.textContent = '消しています…';
+      s.moved = true; statusEl.textContent = 'ぼかしています…';
       s.eraseQueue = (s.eraseQueue || Promise.resolve()).then(() => eraseStroke(s, points, photo)).finally(() => overlay.remove());   // 続けてなぞっても順番に全部消す
     }
     if (pointers.size){ rebase(); return; }
@@ -392,91 +392,43 @@ for (const s of SLOTS){
 }
 
 function render(s){
-  const pending = [...s.el.querySelectorAll('.ecanvas.pending')];   // 消している途中の線は残す
+  const pending = [...s.el.querySelectorAll('.ecanvas.pending')];   // ぼかしている途中の四角は残す
   s.el.replaceChildren();
   const v = state.photos[s.id];
   s.el.classList.toggle('empty', !v);
   if (!v) return;
   const i = new Image(); i.src = v.src; i.alt = ''; i.draggable = false; s.el.append(i, ...pending); layout(s);
 }
-/* 消しゴム：なぞった所を、まわりの色で外側から1周ずつ埋めてなじませる（2026-10-01 まさみ「名前とか出てたらそこだけ消せる」）
-   消す前の写真はメモリの中だけに残す（保存ファイル・端末の自動保存には入れない＝名前が残らない） */
+/* ぼかし：指で囲んだ四角の中を、いったん小さく縮めてから元の大きさに戻してぼかす（2026-10-01 まさみ「消しゴム使いにくい」→「ぼかす」）
+   縮める大きさは写真の長辺の1/25（1600pxなら約64px角）＝名札の文字が読めないくらい。iPadのSafariでも同じに動く
+   ぼかす前の写真はメモリの中だけに残す（保存ファイル・端末の自動保存には入れない＝名前が残らない） */
 async function eraseStroke(s, points, v){
   if (!v || state.photos[s.id] !== v) return;
   const original = v.src;
   try{
     const im = new Image(); im.src = original; await im.decode();
-    const w = im.naturalWidth, h = im.naturalHeight;
+    const w = im.naturalWidth, h = im.naturalHeight, first = points[0], last = points[points.length - 1];
+    const x0 = Math.max(0, Math.floor(Math.min(first.x, last.x))), y0 = Math.max(0, Math.floor(Math.min(first.y, last.y)));
+    const x1 = Math.min(w, Math.ceil(Math.max(first.x, last.x))), y1 = Math.min(h, Math.ceil(Math.max(first.y, last.y)));
+    const bw = x1 - x0, bh = y1 - y0;
+    if (bw < 6 || bh < 6){ statusEl.textContent = 'ぼかしたい所を、指で四角に囲んでください'; return; }   // ちょんと触っただけの時は何もしない
     const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d', {willReadFrequently: true}); ctx.drawImage(im, 0, 0);
-    // なぞった線を、写真と同じ大きさの見えない板に描いて「消す所」を決める（点ごとの丸＋線。どのブラウザでも点が抜けない）
-    const mc = Object.assign(document.createElement('canvas'), {width: w, height: h}).getContext('2d', {willReadFrequently: true});
-    mc.strokeStyle = mc.fillStyle = '#fff'; mc.lineCap = mc.lineJoin = 'round'; mc.lineWidth = 2 * points[0].r;
-    mc.beginPath(); for (const p of points){ mc.moveTo(p.x + p.r, p.y); mc.arc(p.x, p.y, p.r, 0, Math.PI * 2); } mc.fill();
-    if (points.length > 1){ mc.beginPath(); mc.moveTo(points[0].x, points[0].y); for (const p of points) mc.lineTo(p.x, p.y); mc.stroke(); }
-    let x0 = w, y0 = h, x1 = 0, y1 = 0;
-    for (const p of points){ x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r); x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r); }
-    x0 = Math.max(0, Math.floor(x0) - 2); y0 = Math.max(0, Math.floor(y0) - 2); x1 = Math.min(w, Math.ceil(x1) + 2); y1 = Math.min(h, Math.ceil(y1) + 2);
-    if (x1 <= x0 || y1 <= y0) throw new Error('写真の外');
-    const bw = x1 - x0, bh = y1 - y0, pix = ctx.getImageData(x0, y0, bw, bh), m = mc.getImageData(x0, y0, bw, bh).data;
-    const list = []; for (let i = 0; i < bw * bh; i++) if (m[i * 4 + 3]) list.push(i);
-    if (!list.length) throw new Error('写真の外');
-    inpaint(pix.data, bw, bh, list);
-    ctx.putImageData(pix, x0, y0);
+    const ctx = canvas.getContext('2d'); ctx.drawImage(im, 0, 0);
+    const block = Math.max(12, Math.round(Math.max(w, h) / 25));
+    // 半分ずつ縮める（一気に縮めると色が混ざらず文字の形が残る）→ 倍ずつ戻す（なめらかにぼける）
+    const tw = Math.max(1, Math.round(bw / block)), th = Math.max(1, Math.round(bh / block)), steps = [];
+    let cw = bw, ch = bh, cur = Object.assign(document.createElement('canvas'), {width: bw, height: bh});
+    cur.getContext('2d').drawImage(canvas, x0, y0, bw, bh, 0, 0, bw, bh); steps.push(cur);
+    const resize = (src, nw, nh) => { const c = Object.assign(document.createElement('canvas'), {width: nw, height: nh}), x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, nw, nh); steps.push(c); return c; };
+    while (cw > tw || ch > th){ cw = Math.max(tw, Math.ceil(cw / 2)); ch = Math.max(th, Math.ceil(ch / 2)); cur = resize(cur, cw, ch); }
+    while (cw < bw || ch < bh){ cw = Math.min(bw, cw * 2); ch = Math.min(bh, ch * 2); cur = resize(cur, cw, ch); }
+    ctx.drawImage(cur, x0, y0);
     const result = canvas.toDataURL('image/jpeg', .86);
-    canvas.width = canvas.height = mc.canvas.width = mc.canvas.height = 0;   // iPadのSafariは作業用の絵の場所をすぐ返さないので、使い終わったら空にする
-    if (state.photos[s.id] !== v || v.src !== original) return;          // 消している間に写真が差し替わった・戻された時は何もしない
+    canvas.width = canvas.height = 0; for (const c of steps) c.width = c.height = 0;   // iPadのSafariは作業用の絵の場所をすぐ返さないので、使い終わったら空にする
+    if (state.photos[s.id] !== v || v.src !== original) return;          // ぼかしている間に写真が差し替わった・戻された時は何もしない
     const history = eraseHistory.get(v) || []; history.push(original); if (history.length > 10) history.shift(); eraseHistory.set(v, history);
-    v.src = result; render(s); sync(); changed('消しました（「消しゴムを1回戻す」で戻せます）');
-  }catch(e){ statusEl.textContent = '消せませんでした'; }
-}
-/* d＝w×hの画素（RGBA）。list の画素を、分かっている近くの色の重み付き平均で外側から1周ずつ埋め、最後に上下左右の平均で20回なめらかにする
-   1周ごとに「いま埋めた画素のとなり」だけを見るので、広く消しても重くならない */
-function inpaint(d, w, h, list){
-  const DX = [-1, 1, 0, 0, -1, 1, -1, 1], DY = [0, 0, -1, 1, -1, -1, 1, 1], WT = [1, 1, 1, 1, .7, .7, .7, .7];
-  const unknown = new Uint8Array(w * h), queued = new Uint8Array(w * h);
-  for (const i of list) unknown[i] = 1;
-  let ring = [], left = list.length;
-  for (const i of list){
-    const x = i % w, y = (i - x) / w;
-    for (let k = 0; k < 8; k++){ const nx = x + DX[k], ny = y + DY[k]; if (nx >= 0 && nx < w && ny >= 0 && ny < h && !unknown[ny * w + nx]){ ring.push(i); queued[i] = 1; break; } }
-  }
-  while (ring.length){
-    const val = new Float32Array(ring.length * 3), next = [];
-    for (let q = 0; q < ring.length; q++){
-      const i = ring[q], x = i % w, y = (i - x) / w; let r = 0, g = 0, b = 0, t = 0;
-      for (let k = 0; k < 8; k++){
-        const nx = x + DX[k], ny = y + DY[k]; if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-        const n = ny * w + nx; if (unknown[n]) continue;
-        r += d[n * 4] * WT[k]; g += d[n * 4 + 1] * WT[k]; b += d[n * 4 + 2] * WT[k]; t += WT[k];
-      }
-      val[q * 3] = r / t; val[q * 3 + 1] = g / t; val[q * 3 + 2] = b / t;
-    }
-    for (let q = 0; q < ring.length; q++){ const i = ring[q]; d[i * 4] = val[q * 3]; d[i * 4 + 1] = val[q * 3 + 1]; d[i * 4 + 2] = val[q * 3 + 2]; unknown[i] = 0; }
-    left -= ring.length;
-    for (const i of ring){
-      const x = i % w, y = (i - x) / w;
-      for (let k = 0; k < 8; k++){ const nx = x + DX[k], ny = y + DY[k]; if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue; const n = ny * w + nx; if (unknown[n] && !queued[n]){ queued[n] = 1; next.push(n); } }
-    }
-    ring = next;
-  }
-  if (left) throw new Error('まわりの色がない');
-  const pos = new Int32Array(w * h).fill(-1); let cur = new Float32Array(list.length * 3), nxt = new Float32Array(list.length * 3);
-  list.forEach((i, q) => { pos[i] = q; cur[q * 3] = d[i * 4]; cur[q * 3 + 1] = d[i * 4 + 1]; cur[q * 3 + 2] = d[i * 4 + 2]; });
-  for (let pass = 0; pass < 20; pass++){
-    for (let q = 0; q < list.length; q++){
-      const i = list[q], x = i % w, y = (i - x) / w; let r = 0, g = 0, b = 0, c = 0;
-      for (let k = 0; k < 4; k++){
-        const nx = x + DX[k], ny = y + DY[k]; if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-        const n = ny * w + nx, p = pos[n];
-        if (p >= 0){ r += cur[p * 3]; g += cur[p * 3 + 1]; b += cur[p * 3 + 2]; } else { r += d[n * 4]; g += d[n * 4 + 1]; b += d[n * 4 + 2]; }
-        c++;
-      }
-      nxt[q * 3] = r / c; nxt[q * 3 + 1] = g / c; nxt[q * 3 + 2] = b / c;
-    }
-    [cur, nxt] = [nxt, cur];
-  }
-  list.forEach((i, q) => { d[i * 4] = cur[q * 3]; d[i * 4 + 1] = cur[q * 3 + 1]; d[i * 4 + 2] = cur[q * 3 + 2]; });
+    v.src = result; render(s); sync(); changed('ぼかしました（「ぼかしを1回戻す」で戻せます）');
+  }catch(e){ statusEl.textContent = 'ぼかせませんでした'; }
 }
 function layout(s){
   const v = state.photos[s.id]; if (!v) return;
@@ -495,14 +447,14 @@ function sync(){
   if (!v) eraserOn = false;
   $('choose').disabled = !active;
   [zoomEl, $('clear'), $('reset')].forEach(e => e.disabled = !v);
-  $('eraser').disabled = $('esize').disabled = !v;
+  $('eraser').disabled = !v;
   $('eundo').disabled = !v || !(eraseHistory.get(v)?.length);
   $('eraser').classList.toggle('on', eraserOn);
   $('eraser').setAttribute('aria-pressed', String(eraserOn));
   document.querySelectorAll('.slot.erasing').forEach(e => e.classList.remove('erasing'));
   if (eraserOn && active) active.el.classList.add('erasing');
   zoomEl.value = v ? v.z : 1;
-  statusEl.textContent = eraserOn ? '消しゴム：消したい所（名前など）を指でなぞってください。2本指で拡大もできます' : active ? (active.id[0] === 'f' ? '表' : '裏') + 'の写真枠 ' + active.id.slice(1) + ' を選択中' : '写真枠をクリックしてください';
+  statusEl.textContent = eraserOn ? 'ぼかす：ぼかしたい所（名前など）を指で四角に囲んでください。2本指で拡大もできます' : active ? (active.id[0] === 'f' ? '表' : '裏') + 'の写真枠 ' + active.id.slice(1) + ' を選択中' : '写真枠をクリックしてください';
 }
 $('eraser').onclick = () => {
   if (!active || !state.photos[active.id]) return;
