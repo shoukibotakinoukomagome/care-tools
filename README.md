@@ -21,3 +21,7 @@ https://shoukibotakinoukomagome.github.io/care-tools/biyori/
 ## keirou2/
 敬老の日の写真フレーム（2人用・海の絵・丸8個・A4横2枚）。左右のお名前と日付は入力欄から入れる（絵には名前を描いていない）。途中の状態は端末内に自動保存。1人用の keirou/ とは別のアプリ（保存も別）。iPadはホーム画面に追加して使う。サーバーには何も送らない。
 https://shoukibotakinoukomagome.github.io/care-tools/keirou2/
+
+## keirou/
+敬老の日の写真フレーム（1人用・お名前は丸の上に弧の文字・デザイン切替）。iPadはホーム画面に追加して使う（アイコン名「敬老1人用」）。2人用の keirou2/ とは別のアプリ。
+https://shoukibotakinoukomagome.github.io/care-tools/keirou/
