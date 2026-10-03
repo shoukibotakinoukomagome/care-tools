@@ -123,6 +123,7 @@ body.swapmode .slot{opacity:.55}
 #catmenu button{padding:7px 11px;border:1px solid #cdbfa9;border-radius:99px;background:#fff;font-size:14px;color:#4a2c14;cursor:pointer}
 #catmenu button:hover{background:#fff1dc}
 #catmenu span{width:100%;font-size:12px;color:#6f604f}
+#catmenu button.close{margin-left:auto;background:#f3ece2}
 @media print{#catmenu{display:none!important}}
 
 @media (max-width:900px){.toolbar{position:relative}#status{width:100%;margin-left:0}}
@@ -623,17 +624,29 @@ const CATS = ['季節のひとこま', 'イベント', '食事作り', 'おや�
 const catMenu = document.createElement('div'); catMenu.id = 'catmenu'; catMenu.hidden = true;
 CATS.forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.textContent = c; b.dataset.cat = c; catMenu.append(b); });
 const note = document.createElement('span'); note.textContent = 'そのまま文字を打っても変えられます'; catMenu.append(note);
+const catClose = document.createElement('button'); catClose.type = 'button'; catClose.className = 'close'; catClose.textContent = '閉じる'; catMenu.append(catClose);
 document.body.append(catMenu);
 let catTarget = null;
-document.querySelectorAll('.pill .t').forEach(el => el.addEventListener('focus', () => {
+const showCat = el => {
   catTarget = el; const r = el.parentElement.getBoundingClientRect();
   catMenu.hidden = false; catMenu.style.left = Math.max(8, r.left + scrollX) + 'px'; catMenu.style.top = (r.bottom + scrollY + 6) + 'px';
-}));
+};
+document.querySelectorAll('.pill .t').forEach(el => {
+  el.addEventListener('focus', () => showCat(el));
+  el.addEventListener('click', () => { if (document.activeElement === el && catMenu.hidden) showCat(el); });   // 閉じたあと、もう一度さわったら出す
+  el.addEventListener('input', () => { if (catTarget === el) catMenu.hidden = true; });                      // 自分で打ち始めたら候補はしまう
+});
 catMenu.addEventListener('pointerdown', e => e.preventDefault());
 catMenu.addEventListener('click', e => {
+  if (e.target === catClose){ catMenu.hidden = true; catTarget?.blur(); return; }
   const c = e.target.dataset && e.target.dataset.cat; if (!c || !catTarget) return;
-  catTarget.textContent = c; state.texts[catTarget.dataset.id] = c; changed('見出しを「' + c + '」にしました'); catTarget.blur();
+  catTarget.textContent = c; state.texts[catTarget.dataset.id] = c; changed('見出しを「' + c + '」にしました'); catMenu.hidden = true; catTarget.blur();
 });
+// 候補の外をさわったら閉じる（iPhone・iPadは外をさわっても入力中のままで、下の focusout が来ないため・2026-10-03 まさみ「これが消えないのよね毎回」）
+document.addEventListener('pointerdown', e => {
+  if (catMenu.hidden || catMenu.contains(e.target) || (catTarget && catTarget.parentElement.contains(e.target))) return;
+  catMenu.hidden = true;
+}, true);
 document.addEventListener('focusout', e => { if (e.target === catTarget) setTimeout(() => { if (document.activeElement !== catTarget) catMenu.hidden = true; }, 150); });
 
 /* ---------- ガーランドを枠の幅いっぱいに（object-fitに頼らず実寸で置く＝PDFでも同じ） ----------
