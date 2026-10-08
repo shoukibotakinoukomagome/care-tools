@@ -61,10 +61,10 @@ button,input{font:inherit}
 .slot.active.erasing{cursor:crosshair}
 .slot{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .slot .ecanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-/* 2026-10-09 写真の下に小さい説明（キャプション）：半透明の白い帯・1行・長い時は「…」で切る（JSで文字数を決めるのでPDFでも同じ見た目） */
-.slot .cap{position:absolute;left:0;right:0;bottom:0;z-index:3;box-sizing:border-box;padding:.5mm 1.6mm;background:rgba(255,255,255,.85);color:#4a2c14;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","HG丸ｺﾞｼｯｸM-PRO","Meiryo",sans-serif;font-weight:500;font-size:3.175mm;line-height:1.35;text-align:center;white-space:nowrap;overflow:hidden;pointer-events:none;-webkit-user-select:none;user-select:none}
-.slot .cap.editing{pointer-events:auto;-webkit-user-select:text;user-select:text;cursor:text;text-align:left;outline:.35mm dashed var(--accent);outline-offset:-.35mm}
-.slot .cap.editing:empty::before{content:"説明を入力";color:#a38a6b}
+/* 2026-10-09 写真の左下の色つきラベル（7月号ふう・まさみ指示）：角丸・白い太字・薄い影・4色を枠の順で回す・長い時は「…」（JSで切る＝PDFでも同じ） */
+.slot .cap{position:absolute;left:1.5mm;bottom:1.5mm;max-width:85%;min-width:6mm;z-index:3;box-sizing:border-box;padding:.55mm 2.8mm;border-radius:99px;background:#e25a36;color:#fff;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","HG丸ｺﾞｼｯｸM-PRO","Meiryo",sans-serif;font-weight:900;font-size:3.175mm;line-height:1.4;letter-spacing:.2mm;text-align:center;white-space:nowrap;overflow:hidden;box-shadow:0 .3mm .9mm rgba(60,30,10,.28);pointer-events:none;-webkit-user-select:none;user-select:none}
+.slot .cap.editing{pointer-events:auto;-webkit-user-select:text;user-select:text;cursor:text;text-align:left;min-width:22mm;outline:.35mm dashed #fff;outline-offset:-.5mm}
+.slot .cap.editing:empty::before{content:"説明を入力";color:rgba(255,255,255,.8)}
 .capturing .slot .cap.editing{outline:none}
 @media print{.slot .cap.editing{outline:none}.slot .cap.editing:empty::before{content:""}}
 
@@ -503,16 +503,21 @@ function fitCap(c){                                  // 1行に入らない時�
   while (lo < hi){ const mid = (lo + hi + 1) >> 1; c.textContent = full.slice(0, mid) + '…'; if (c.scrollWidth <= c.clientWidth + 0.5) lo = mid; else hi = mid - 1; }
   c.textContent = full.slice(0, lo) + '…';
 }
+const CAPCOLS = ['#e25a36', '#d63f7d', '#2a86cc', '#14907f'];   // オレンジ・ピンク・青・緑（白文字が読める濃さに少し濃くした）
+function stylCap(s, c){
+  const g = SLOTS.filter(x => x.side === s.side && x.L === s.L && x.FL === s.FL), i = Math.max(0, g.indexOf(s));
+  c.style.background = CAPCOLS[i % 4]; c.style.fontSize = s.r[2] < 35 ? '2.6mm' : '3.175mm';   // 小さい枠は少し小さく（約7.4pt）
+}
 function addCap(s){
   const t = capClean(state.captions && state.captions[s.id]); if (!t) return;
-  const c = document.createElement('div'); c.className = 'cap'; c.dataset.full = t; s.el.append(c); fitCap(c);
+  const c = document.createElement('div'); c.className = 'cap'; c.dataset.full = t; stylCap(s, c); s.el.append(c); fitCap(c);
 }
 function refreshCaps(){ document.querySelectorAll('.slot .cap:not(.editing)').forEach(fitCap); }
 $('cap').onclick = () => {
   const s = active; if (!s || !state.photos[s.id]) return;
   state.captions ??= {};
   let c = s.el.querySelector('.cap');
-  if (!c){ c = document.createElement('div'); c.className = 'cap'; s.el.append(c); }
+  if (!c){ c = document.createElement('div'); c.className = 'cap'; stylCap(s, c); s.el.append(c); }
   const full = capClean(state.captions[s.id]); c.dataset.full = full; c.textContent = full;
   c.classList.add('editing'); editable(c);
   ['pointerdown', 'pointermove', 'pointerup', 'click', 'dblclick'].forEach(ev => c.addEventListener(ev, e => e.stopPropagation()));
