@@ -120,6 +120,7 @@ body.swapmode .slot{opacity:.55}
 #file{display:none}
 .fs{display:inline-flex;align-items:center;gap:4px;font-size:14px}
 #catmenu{position:absolute;z-index:80;display:flex;flex-wrap:wrap;gap:6px;max-width:min(520px,calc(100vw - 32px));padding:10px;background:#fffdf8;border:1px solid #cdbfa9;border-radius:10px;box-shadow:0 4px 16px #0003}
+#catmenu[hidden]{display:none!important}  /* 2026-10-08: 上のdisplay:flexがhidden属性に勝って候補が消えなかった（まさみ「これ消えないけど」） */
 #catmenu button{padding:7px 11px;border:1px solid #cdbfa9;border-radius:99px;background:#fff;font-size:14px;color:#4a2c14;cursor:pointer}
 #catmenu button:hover{background:#fff1dc}
 #catmenu span{width:100%;font-size:12px;color:#6f604f}
